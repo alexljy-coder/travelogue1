@@ -1,6 +1,6 @@
 # Implementation status
 
-Milestone 1: local project foundation implemented and verified. Hosted deployment/setup acceptance remains pending the manual steps below. Milestone 2 has not started.
+Milestone 1: local project foundation and hosted verification complete. Hosted verification was confirmed by the owner on 2026-09-30. Milestone 2 has not started.
 
 ## Implemented
 
@@ -17,6 +17,7 @@ Milestone 1: local project foundation implemented and verified. Hosted deploymen
 - Production-server smoke checks with missing/synthetic configuration, admin redirects, cache/privacy headers and absent signup/register routes.
 - Exact dependency pins/lockfile, Node 24/pnpm tooling, lint/typecheck/build scripts, CI workflow and local Supabase config with signup disabled.
 - Setup guide explaining hosted migration/account provisioning and smoke checks. .env.example contains only the two public variable names with empty values; no R2 credentials or secrets added.
+- Hosted verification complete, as confirmed by the owner: the Supabase migration was applied successfully, the singleton administrator was provisioned, local authentication was verified, and the Vercel deployment was successfully tested against hosted Supabase.
 
 Verification run on 2026-09-30:
 
@@ -33,12 +34,10 @@ Verification run on 2026-09-30:
 
 ## In Progress
 
-- No active application implementation. Hosted setup is an operator handoff, not work performed against the existing project.
+- None. Milestone 1 is complete; Milestone 2 has not started.
 
 ## Not Started
 
-- Applying the migration to hosted Supabase, configuring hosted signup/Auth/redirect settings and provisioning the actual owner identity.
-- Hosted Auth/JWT/PostgREST/browser-session tests and Vercel preview/production verification.
 - Milestone 2: Trip/City/Location workflow, CRUD and transactional membership handling.
 - Hotel/Stay management, publishing UI, Photos/detail/gallery, Featured/cover controls and ordering UI.
 - R2 integration, derivatives, browser importer, EXIF extraction and import history UI.
@@ -46,8 +45,7 @@ Verification run on 2026-09-30:
 
 ## Known Issues
 
-- No hosted connection/credentials were provided. Existing Supabase tables/history/Auth settings and Vercel health are unverified. Never assume an empty remote database; follow supabase-setup.md before applying SQL.
-- Embedded PostgreSQL uses test-only Auth objects. Passing SQL tests does not verify Supabase's hosted JWT gateway, PostgREST, actual login/session refresh or disabled signup. Production smoke tests intentionally do not use a real account.
+- Embedded PostgreSQL uses test-only Auth objects, and automated production smoke tests use synthetic configuration. Hosted verification completion is recorded from the owner's confirmation; no additional remote checks were performed during this status update.
 - Next's current lint dependencies require ESLint 9/TypeScript <6.1; ESLint 9.39.5 emits an upstream support/deprecation warning. Peer-compatible versions are pinned; review a compatible tooling upgrade when available. This is a development-tooling limitation, not a security bypass.
 - Cover relationship eligibility is application-level, with tested helpers but no live mutation workflow. Future cover selectors/public queries must use the helpers and resolve anonymous effective Photo visibility.
 - Future importer browser support and Vercel processing resources need empirical testing; map/tile selection remains deferred. There is no new product blocker or Build Bible conflict.
