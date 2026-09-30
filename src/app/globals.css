@@ -1,0 +1,11 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; color: #262626; background: #faf9f6; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main, header { max-width: 56rem; margin: auto; padding: 2rem 1.25rem; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+form { display: grid; gap: .75rem; max-width: 24rem; }
+input, button { font: inherit; padding: .65rem; }
+button { cursor: pointer; }
+button:disabled { cursor: wait; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid #85462f; outline-offset: 3px; }

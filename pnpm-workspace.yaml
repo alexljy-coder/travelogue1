@@ -1,0 +1,4 @@
+# Native test/lint dependencies require their normal installation scripts.
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true

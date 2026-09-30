@@ -1,0 +1,17 @@
+# Local environment values; the names-only example is safe to commit.
+.env*
+!.env.example
+
+# Future application/tool artifacts
+node_modules/
+.next/
+out/
+.vercel/
+coverage/
+*.tsbuildinfo
+*.log
+supabase/.temp/
+
+# macOS filesystem metadata
+.DS_Store
+._*
