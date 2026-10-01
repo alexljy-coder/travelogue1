@@ -114,3 +114,19 @@ Stream existing bytes with no reprocessing. Native responsive srcSet uses actual
 Photo URLs remain UUIDs. Detail shows only real optional editorial/EXIF metadata, retaining the captured calendar date without inferring a timezone. Geography is derived from assigned Location/City/Country, never photo GPS. Trip title is text until public Trip pages exist. All public-visible Photo contexts can use the common image/detail shell under existing RLS, but Hotel/Stay context/UI is deferred. OG titles/descriptions are safe public text; canonical-domain and OG imagery are deferred rather than inventing branding/domain configuration. No new environment variables or R2/CORS settings are required.
 
 Milestone 3 hosted/local proof is complete per the owner's Milestone 4 instruction. No remote infrastructure was modified by the agent.
+
+## D021 — Existing Trip/Location slug routes and visibility
+
+Milestone 5 implements `/trips`, `/trips/[slug]` and `/locations/[slug]` using existing unique slug columns and Bible section 11. No UUID/human-slug alternative or schema change. City/Country remain supporting labels, not destination guides. Published Location is independently eligible; unpublished related Trips and their required-child photos are hidden by existing RLS. Cookie-free anonymous clients query explicit minimal projections only; no privileged credentials, public GPS or notes.
+
+## D022 — Public cover fallback and contextual photography
+
+Resolve stored cover pointers under anonymous RLS, additionally filtering Nice + Travel and the exact Trip/Location identity. Invalid/stale/invisible pointers fall back to the first eligible public photo using existing deterministic ordering. No eligible image means text-only presentation, with no placeholder/Featured mutation. The cover is excluded from subsequent Nice pages. Trips show Nice prominently and Record in a separate The Record section; Hotel photography remains separate, not derived through Stay into a Trip gallery. Locations show Nice and links to visible related Trips. Dates remain optional/partial; no fabricated historical interval or itinerary logic.
+
+## D023 — Cross-navigation and bounded public reads
+
+Photo context now includes only the publicly resolved Trip/Location slug, enabling real Photo → Trip/Location links. Trip → Places → Location → Trips creates contextual navigation without new City/Country pages or duplicated Photo URLs. Trips nav becomes active; other future nav labels remain disabled. Public styles/components/derivative delivery extend Milestone 4 without redesign. All reads/media retain dynamic/no-store and the optimizer block.
+
+Index uses twelve Trips plus lookahead, batched supporting geography/cover context and at most three concurrent one-photo cover queries. Detail galleries each use 24 photos plus lookahead; independent simple section pages preserve context. Trip Places and Location Trip relationships are also paged at 24. Supporting City joins are chunked at 200, geographic IDs at 100. Offset pages can shift if content changes concurrently; no queues/cursors/search infrastructure. No migration/new environment/configuration is required. Admin cover selection and Hotel/Stay UI remain deferred.
+
+Milestone 4 is deployed and manually accepted on Vercel per the owner's Milestone 5 instruction.

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getPublicPhoto } from '@/lib/data/public-archive';
 import { isPhotoId } from '@/lib/data/public-photos';
 import { Photograph, photoLabel } from '@/components/public/photograph';
+import { PhotoContextLinks } from '@/components/public/journey';
 async function photoOrNotFound(id: string) {
   if (!isPhotoId(id)) notFound();
   const photo = await getPublicPhoto(id);
@@ -27,7 +28,7 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
   ].filter((entry): entry is [string, string] => !!entry[1]);
   return <main id="archive-content" className="archive-main archive-detail"><Link className="archive-back" href={photo.classification === 'record' ? '/photos?view=record' : '/photos'}>← Photos{photo.classification === 'record' ? ' / Record' : ''}</Link>
     <figure className="archive-detail-image"><Photograph photo={photo} detail priority /></figure>
-    <div className="archive-detail-text"><section><h1>{photoLabel(photo)}</h1>{photo.description && <p className="archive-description">{photo.description}</p>}</section>
+    <div className="archive-detail-text"><section><h1>{photoLabel(photo)}</h1>{photo.description && <p className="archive-description">{photo.description}</p>}<PhotoContextLinks photo={photo}/></section>
       {metadata.length > 0 && <dl className="archive-metadata">{metadata.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>}
     </div></main>;
 }

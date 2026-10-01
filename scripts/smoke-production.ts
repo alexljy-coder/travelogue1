@@ -73,7 +73,31 @@ async function unusedPort() {
     }
     assert.equal((await fetch(`${base}/signup`)).status, 404);
     assert.equal((await fetch(`${base}/admin/register`)).status, 404);
-    assert.equal((await fetch(`${base}/trips/example`)).status, 404);
+    assert.equal((await fetch(`${base}/trips/not_valid`)).status, 404);
+    assert.equal((await fetch(`${base}/locations/not_valid`)).status, 404);
+    const trips = await fetch(`${base}/trips`);
+    assert.equal(trips.status, 200);
+    assert.match(trips.headers.get('cache-control') ?? '', /no-store/);
+    assert.equal(trips.headers.get('set-cookie'), null);
+    const tripHtml = await trips.text();
+    assert.match(tripHtml, /<h1>Trips<\/h1>/);
+    assert.doesNotMatch(tripHtml, /internal_notes|storage_key|file_hash|source\.jpg/);
+    const tripLink = tripHtml.match(/href="(\/trips\/[a-z0-9-]+)"/);
+    if (tripLink) {
+      const trip = await fetch(`${base}${tripLink[1]}`);
+      assert.equal(trip.status, 200);
+      assert.match(trip.headers.get('cache-control') ?? '', /no-store/);
+      const html = await trip.text();
+      assert.doesNotMatch(html, /internal_notes|storage_key|source\.jpg/);
+      const placeLink = html.match(/href="(\/locations\/[a-z0-9-]+)"/);
+      if (placeLink) {
+        const place = await fetch(`${base}${placeLink[1]}`);
+        assert.equal(place.status, 200);
+        assert.match(place.headers.get('cache-control') ?? '', /no-store/);
+        assert.match(await place.text(), /Trips through this place/);
+      }
+      for (const path of ['/trips/missing-trip-for-smoke-7af9', '/locations/missing-location-for-smoke-7af9']) assert.equal((await fetch(`${base}${path}`)).status, 404);
+    }
     for (const path of ['/photos', '/photos?view=record']) {
       const response = await fetch(`${base}${path}`);
       assert.equal(response.status, 200);

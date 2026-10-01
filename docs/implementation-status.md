@@ -1,6 +1,6 @@
 # Implementation status
 
-Milestones 1–3 and their hosted verification are complete per the owner. Milestone 4 first public photography experience is implemented and verified locally on 2026-10-01 against existing published hosted Supabase/R2 content. Deployment acceptance of this new milestone remains an owner step; no hosted migration, Cloudflare change or remote content mutation was performed.
+Milestones 1–4 and their hosted verification/acceptance are complete per the owner. Milestone 5 public Trips and Places is implemented and locally verified on 2026-10-01; checks are recorded below. New deployment acceptance remains an owner step. No hosted migration, Cloudflare change or remote content mutation was performed.
 
 ## Implemented
 
@@ -13,8 +13,8 @@ Milestones 1–3 and their hosted verification are complete per the owner. Miles
 - Parent-aware anonymous reads and column privacy; authenticated archive access requires the singleton administrator. Unrelated authenticated users receive zero rows and cannot mutate. Private identity cannot be browser-managed.
 - Typed publishing/cover eligibility preflight helpers for future photo/Stay workflows; Trip/Location status can now be edited in admin.
 - Generated Supabase-compatible table/relationship types from migrated PostgreSQL catalog and drift-check script.
-- 66 automated tests, including real embedded PostgreSQL RPCs/constraints/grants/RLS, Sharp JPEG/WebP/EXIF processing, authenticated API boundaries and fake-R2 failure/retry/deletion scenarios. No production bucket access.
-- Production-server smoke checks against the build's actual configuration, all admin route guards, private image/storage endpoints, unauthorized upload operations, cache/privacy headers and absent registration/public Trip routes. Missing configuration is separately covered by unit tests.
+- 75 automated tests, including real embedded PostgreSQL RPCs/constraints/grants/RLS, Sharp JPEG/WebP/EXIF processing, authenticated API boundaries and fake-R2 failure/retry/deletion scenarios. No production bucket access.
+- Production-server smoke checks against the build's actual configuration, all admin route guards, private image/storage endpoints, unauthorized upload operations, cache/privacy headers, absent registration routes and public Photo/Trip/Location behavior. Missing configuration is separately covered by unit tests.
 - Exact dependency pins/lockfile, Node 24/pnpm tooling, lint/typecheck/build scripts, CI workflow and local Supabase config with signup disabled.
 - Setup guides explaining hosted Auth/migrations and private R2 credentials/CORS/controlled testing. .env.example contains empty variable names only; no real credentials committed.
 - Hosted verification complete, as confirmed by the owner: the Supabase migration was applied successfully, the singleton administrator was provisioned, local authentication was verified, and the Vercel deployment was successfully tested against hosted Supabase.
@@ -46,23 +46,23 @@ Milestone 3 verification run on 2026-10-01:
 
 ## In Progress
 
-- Owner deployment acceptance for Milestone 4: verify the new public pages/media and withdrawal behavior on Vercel using the manual plan below. Implementation and local checks are complete; Milestone 5 has not begun.
+- Owner deployment acceptance for Milestone 5: verify public Trip/Location pages, cross-links and withdrawal on Vercel. Milestone 6 has not begun.
 
 ## Not Started
 
-- Milestone 5 (recommended): first public Trip index/detail slice with existing geographic/Photo context and separate Nice/The Record presentation.
-- Public Trip/Location pages, Hotel/Stay management/public context, cover selection and drag-and-drop ordering UI.
+- Milestone 6 (recommended): private Hotel/Stay admin workflow and Hotel-context photo assignment, with repeated Stays and optional historical dates/reviews.
+- Hotel/Stay management/public context, cover selection and drag-and-drop ordering UI.
 - Importer refinements, grouping/suggestions and broader browser/performance work. Re-import/replacement remains Phase 2.
 - Map, About, final visual design/branding, broader performance/accessibility work and final release checks.
 
 ## Known Issues
 
-- Embedded PostgreSQL uses test-only Auth objects; automated ingestion/security tests use fake R2, not destructive production access. Milestones 1–3 hosted verification are owner-reported. Milestone 4 browser/production checks read existing anonymous-visible hosted Photos/derivatives without remote writes. New Vercel deployment withdrawal/cache behavior still needs the owner acceptance check.
-- All three existing migrations are applied per the owner. Milestone 4 adds no migration or environment variables. Do not rerun/reset applied migrations.
+- Embedded PostgreSQL uses test-only Auth objects; automated ingestion/security tests use fake R2, not destructive production access. Milestones 1–3 hosted verification are owner-reported. Milestone 4 browser/production checks read existing anonymous-visible hosted Photos/derivatives without remote writes. Milestone 4 is deployed/accepted per the owner; the new Milestone 5 Vercel deployment still needs its acceptance check.
+- All three existing migrations are applied per the owner. Milestones 4–5 add no migration or environment variables. Do not rerun/reset applied migrations.
 - Folder picker preserves paths where supported. Loose-file drag/drop requires explicit Nice/Record and Personal-exclusion confirmation; lost classification cannot be inferred. Recursive dropped-directory traversal is deferred. Exact-byte duplicates are reused, not replaced; different exports of the same image are not reconciled.
 - Source limit: ten eligible JPEGs, 25 MiB/file, 4000px/16 megapixels, sequential bounded processing. The initial Vercel import proof is owner-verified; future larger-volume CPU/memory/runtime capacity still needs measurement. Export quality/sharpening and untagged source profile are not retrospectively verifiable. No automatic orphan sweeper/background recovery is introduced; hard interruptions retain traceable state for manual cleanup after lease expiry.
 - Next's current lint dependencies require ESLint 9/TypeScript <6.1; ESLint 9.39.5 emits an upstream support/deprecation warning. Peer-compatible versions are pinned; review a compatible tooling upgrade when available. This is a development-tooling limitation, not a security bypass.
-- Cover relationship eligibility is application-level, with tested helpers but no live mutation workflow. Future cover selectors/public queries must use the helpers and resolve anonymous effective Photo visibility.
+- Cover relationship eligibility is application-level, with tested helpers but no live mutation workflow. Future admin cover selectors must enforce eligibility; implemented public Trip/Location cover queries resolve anonymous effective Photo visibility and exact context/identity.
 - Map/tile selection remains deferred. Public delivery intentionally has no shared cache; it checks visibility per image and streams through Vercel. A later traffic/cost optimization must preserve parent-aware withdrawal. Already authorized/in-flight/downloaded bytes cannot be recalled. No unresolved product conflict was found.
 - Canonical-domain/OG image configuration and Hotel/Stay public geographic context remain deferred. Public Photo detail can use the common shell for any RLS-visible Photo; current Travel imports show assigned Location geography.
 - The local Turbopack persistence cache failed during preview startup. Responsive verification used `pnpm dev --webpack`; the established Webpack production build passed. Next dev generated AGENTS.md/CLAUDE.md with its version-specific documentation guidance.
@@ -156,4 +156,62 @@ Milestone 3 hosted proof is complete per the owner. The following Milestone 4 wo
 5. Unpublish a test Photo or its required Trip/Location in admin. In a fresh request/hard reload, verify it disappears from home/gallery/detail and all four derivative endpoints return 404. Restore only the intended test states; no publication cascade should occur.
 6. Inspect public HTML/network payloads for absence of exact EXIF GPS, internal notes, source storage keys and credentials. Check photo responses' no-store headers and that `/_next/image` cannot optimize local image routes. Already downloaded images cannot be revoked.
 
-Recommended Milestone 5: the minimal public Trip experience using existing Trip–City–Location–Photo relationships, optional historical dates, Nice photography and a distinct The Record section. Milestone 5 has not started.
+Milestone 4 has been deployed and manually accepted on Vercel per the owner. Milestone 5 implements the travel layer below.
+
+## Milestone 5 implemented
+
+- `/trips`: published-only, photography-led summaries using existing Trip slugs, optional real dates and explicit City/Country membership. Twelve Trips per page; safe cover or intentional text-only presentation.
+- `/trips/[slug]`: real identity/description/geography, large opening photograph, linked Places, contextual Nice photography and distinct The Record. Unknown dates remain absent; no itinerary/guide/timeline fields.
+- `/locations/[slug]`: already-established Location slug route; curated City/Country labels, optional existing description, Nice photography and visible related Trips. Location remains independently Published when related Trips become Draft; those Trips/photos are hidden.
+- Safe cover resolution: effectively visible Published Nice Travel photo for the exact Trip/Location, else deterministic eligible fallback, else text. Wrong-parent/Record/Hotel/Draft/stale pointers never authorize imagery. No stored pointer/Featured changes or admin cover UI.
+- Photo detail now links to anonymously resolved Trip/Location slugs. Trip Places and Location Trip links complete contextual navigation; canonical Photo URLs remain UUIDs. Trips nav is active; Stays/Map/About remain disabled. City/Country remain labels, not guides.
+- Reused native-aspect Milestone 4 components and scoped light visual language; responsive WebPs/no source, no new transform, no-store public delivery and optimizer block retained.
+- Explicit public projections omit GPS, notes, source/hash/import/administrative fields. Existing parent-aware RLS and singleton administration remain unchanged; no privileged public client.
+- Bounded contextual lists: 24 Nice + 24 Record + cover maximum per Trip page; cover excluded before Nice pagination. Independent section pages preserve other positions; Trip Places and Location Trips use 24 rows. Supporting City joins/IDs chunked to avoid silent PostgREST truncation; index cover reads cap concurrency at three.
+- Nine new automated tests against actual anonymous PostgreSQL query/grant/RLS behavior, date presentation, cover selection, cross-link rendering, 50-photo pagination and supporting geography exceeding 200 records. Shared anonymous test transport now serializes role switching safely.
+
+### Milestone 5 verification
+
+| Check | Result |
+| --- | --- |
+| pnpm lint | Pass |
+| pnpm typecheck | Pass |
+| pnpm test | Pass, 75/75 |
+| pnpm db:types:check | Pass, no schema/type changes |
+| pnpm build | Pass; all new public content routes dynamic |
+| pnpm test:smoke | Pass; published Trip/Location/Photo routes, missing routes 404, derivative bytes and private-route rejection |
+| Browser verification | Pass 1440px desktop, 768px tablet, 390px mobile, 320px narrow: public Trip index/detail, Location/detail, Photo cross-links, loaded native-aspect derivatives, no overflow; missing routes 404 |
+| Build Bible/applied migrations | Unchanged |
+
+### Milestone 5 files
+
+Created:
+
+- `src/lib/data/{public-places,public-journeys}.ts`.
+- `src/components/public/journey.tsx`.
+- `src/app/(public)/trips/page.tsx`, `trips/[slug]/{page,not-found}.tsx`.
+- `src/app/(public)/locations/[slug]/{page,not-found}.tsx`.
+- `tests/{places.test,public-client}.ts`.
+
+Materially changed:
+
+- `src/lib/data/public-photos.ts`: public parent slugs.
+- `src/app/(public)/{layout.tsx,public.css}`, `photos/[id]/page.tsx`.
+- `scripts/smoke-production.ts`, `tests/public.test.ts`.
+- `docs/{technical-plan,decisions,implementation-status}.md`.
+
+No migrations, dependency/lockfile, environment example, R2 configuration or Build Bible changes.
+
+### Milestone 5 manual acceptance
+
+1. Deploy normally through GitHub/Vercel. Keep existing variables; no SQL/Cloudflare/CORS change.
+2. Signed out, open `/trips`, then a Trip. Verify title, actual dates or intentional omission, City/Country context, valid cover/fallback, Places and photographs. A Trip with no suitable Nice photo must use text, never fake imagery.
+3. Follow Trip → Location → related Trip and Photo → Trip/Location. Confirm only Photos/Trips nav is active and all Photo links keep `/photos/[id]`.
+4. Check Nice vs The Record separation, missing description/EXIF, one-photo/undated Trips and section pagination on larger records. Photo/relationship pages preserve the other section parameters.
+5. Check desktop/tablet/mobile native proportions, readable text/focus and no overflow. Confirm network delivery is existing WebP derivatives, not source JPEGs.
+6. Use a Draft Trip/Location slug: 404 even while signed into admin. Unpublish a test Location: remove its public Places link and required-child photos/derivatives; unpublish a Trip: remove its index/detail and child photos. A reusable Published Location may remain, showing only other visible Trips/photos. Restore the intended test states.
+7. Inspect public payloads for absence of GPS, notes, credentials/source storage keys and operational fields. Private admin/mutations remain protected. Changes are observed on new requests; downloaded/in-flight imagery cannot be recalled.
+
+Limitations: no admin cover selector yet; offset pages can move during concurrent edits; supporting geography can grow for unusually large Trips; no shared CDN cache means database/read-stream cost remains. Hotel/Stay context, Map, Search, canonical-domain/OG imagery remain deferred. No unresolved product conflict or new schema decision.
+
+Recommend Milestone 6: private Hotel/Stay CRUD and Hotel-context photo assignment, proving repeated Stays under one Hotel, required Trip, optional dates/review and private notes. Public Stay presentation can follow in a subsequent milestone. Milestone 6 has not started.

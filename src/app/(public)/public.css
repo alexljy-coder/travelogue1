@@ -52,3 +52,27 @@
   .archive-opening figcaption { flex-direction: column; gap: 0; }
 }
 @media (max-width: 600px) { .archive-grid, .archive-grid[data-count="2"] { columns: 1; }.archive-photo { margin-bottom: 1.5rem; } }
+
+/* Trips and contextual Places extend the existing editorial language. */
+.journey-index { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 3rem 2rem; align-items: start; }
+.journey-summary h2 { margin: 1rem 0 .5rem; overflow-wrap: anywhere; }
+.journey-summary p, .journey-dates, .journey-geography { font-size: .85rem; color: #615d56; line-height: 1.7; margin: .2rem 0; overflow-wrap: anywhere; }
+.journey-heading { margin-bottom: 2rem; }
+.journey-heading h1 { overflow-wrap: anywhere; }
+.journey-heading .journey-dates { margin: .75rem 0 .3rem; }
+.journey-description { white-space: pre-line; line-height: 1.8; max-width: 45rem; margin: 2rem 0; overflow-wrap: anywhere; }
+.journey-section { margin-top: 3rem; }
+.journey-section > h2 { margin-bottom: 1.5rem; }
+.journey-place-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem 2rem; padding: 0; list-style: none; }
+.journey-place-list li { overflow-wrap: anywhere; line-height: 1.7; }
+.journey-place-list span { display: block; color: #615d56; font-size: .8rem; }
+.journey-record { border-top: 1px solid #e2dfd8; padding-top: 2rem; }
+.journey-record .archive-grid { columns: 3; }
+.journey-record .archive-grid[data-count="1"] { max-width: 600px; columns: 1; }
+.journey-record .archive-grid[data-count="2"] { columns: 2; }
+.journey-empty { color: #615d56; margin: 2rem 0; }
+.journey-context-links { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin-top: 1.5rem; font-size: .85rem; }
+.journey-context-links a { text-decoration: underline; text-underline-offset: .2em; }
+@media(max-width:1000px){.journey-record .archive-grid{columns:2;}}
+@media(max-width:740px){.journey-index,.journey-place-list{grid-template-columns:1fr;}.journey-section{margin-top:2rem;}}
+@media(max-width:600px){.journey-record .archive-grid,.journey-record .archive-grid[data-count="2"]{columns:1;}}

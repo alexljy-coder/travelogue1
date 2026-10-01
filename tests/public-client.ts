@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import { createClient } from '@supabase/supabase-js';
+import type { PGlite } from '@electric-sql/pglite';
+import type { Database } from '../src/types/database';
+import { asRole } from './database';
+export function createAnonymousClient(db: PGlite, requests: string[] = []) {
+  let pending: Promise<unknown> = Promise.resolve();
+  return createClient<Database>('https://fixture.supabase.co', 'anonymous-fixture-key', {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: async (input, init) => {
+      const url = new URL(String(input));
+      assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer anonymous-fixture-key');
+      const table = url.pathname.split('/').at(-1)!;
+      assert.ok(['photos','locations','trips','cities','countries','trip_cities','trip_locations'].includes(table));
+      const select = url.searchParams.get('select')!;
+      assert.ok(/^[a-z_,]+$/.test(select));
+      requests.push(`${table}:${select}`);
+      const values: string[] = []; const conditions: string[] = [];
+      for (const [key, value] of url.searchParams) {
+        if (['select','order','limit','offset'].includes(key)) continue;
+        assert.ok(/^[a-z_]+$/.test(key));
+        if (value.startsWith('eq.')) { values.push(value.slice(3)); conditions.push(`${key}=$${values.length}`); }
+        else if (value.startsWith('neq.')) { values.push(value.slice(4)); conditions.push(`${key}<>$${values.length}`); }
+        else if (value.startsWith('in.(')) {
+          const items = value.slice(4,-1).split(',');
+          conditions.push(`${key} in (${items.map((item) => { values.push(item); return `$${values.length}`; }).join(',')})`);
+        } else throw new Error('Unexpected filter');
+      }
+      const ordering = url.searchParams.get('order')?.split(',').map((term) => {
+        const [field, direction, nulls] = term.split('.');
+        assert.ok(/^[a-z_]+$/.test(field)); assert.ok(['asc','desc'].includes(direction));
+        return `${field} ${direction} ${nulls === 'nullslast' ? 'nulls last' : nulls === 'nullsfirst' ? 'nulls first' : ''}`;
+      }).join(',');
+      const sql = `select ${select} from public.${table}${conditions.length ? ` where ${conditions.join(' and ')}` : ''}${ordering ? ` order by ${ordering}` : ''} limit ${Number(url.searchParams.get('limit') ?? 100)} offset ${Number(url.searchParams.get('offset') ?? 0)}`;
+      const operation = pending.then(() => asRole(db, 'anon', null, async () => (await db.query(sql, values)).rows));
+      pending = operation.then(() => undefined, () => undefined);
+      const rows = await operation;
+      // supabase-js maybeSingle requests an array and normalizes zero/one rows.
+      return new Response(JSON.stringify(rows), { headers: { 'Content-Type': 'application/json' } });
+    } },
+  });
+}
