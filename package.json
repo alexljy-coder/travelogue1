@@ -18,12 +18,16 @@
     "test:smoke": "tsx scripts/smoke-production.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1130.0",
+    "@aws-sdk/s3-request-presigner": "3.1130.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.117.2",
+    "exifr": "7.1.3",
     "next": "16.3.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "0.0.1",
+    "sharp": "0.35.5",
     "zod": "4.6.5"
   },
   "devDependencies": {

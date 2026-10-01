@@ -33,9 +33,9 @@ A private singleton identity row references auth.users. A narrow security-define
 
 RLS is not column security. Anonymous SELECT grants explicitly omit photo GPS, filename/storage/hash/import metadata and Stay internal_notes. Authenticated table access is admin-only, not a second public-read policy: unrelated authenticated users receive zero rows and cannot mutate. This permits full-column admin access without leaking private columns to a non-admin session. Public pages use an anonymous cookie-free client even when the browser is logged in. Countries/Cities expose only geography reachable from published content, without invented publication states.
 
-## D006 — Future R2 remains private and deferred
+## D006 — Private R2 boundary
 
-The whole bucket stays private. Future authenticated scoped PUT signing, per-photo Node/Sharp work, readiness state and visibility-checked image delivery must be benchmarked on the actual Vercel plan. No public r2.dev, random-key privacy assumption, upload implementation or credentials now.
+The whole bucket stays private. Milestone 3 now implements authenticated upload capabilities, per-photo Node/Sharp work, readiness state and private image delivery (D013–D016). Benchmark on the actual Vercel plan. No public r2.dev or random-key privacy assumption.
 
 ## D007 — Implementation extensions
 
@@ -66,3 +66,35 @@ Adding a Location adds its City to the Trip in the same transaction and preserve
 Destructive forms require explicit confirmation. Trip deletion removes only that Trip and its City/Location joins, preserving geographic records; any Photo or Stay reference blocks it. Location deletion is blocked by Trip memberships or Photos, using existing RESTRICT foreign keys. No automatic cleanup or archive-content cascades. Forms retain values after validation failures, accept unknown/partial dates and separate inline geography creation from the main save form. Cover fields are deliberately absent until photos exist; saves preserve any stored cover. Status changes affect only the selected record; parent-aware public RLS remains unchanged.
 
 Catalog selectors read bounded pages rather than silently hitting PostgREST's response limit. Lists paginate and use deterministic ordering. Position fields are optional numeric inputs; no drag-and-drop UI. Milestone 2 contains no public content experience or new environment variables.
+
+## D013 — Bounded private upload transport
+
+Milestone 3 keeps the S3 SDK and reusable credentials on the server. The four required environment variables are R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY; optional R2_JURISDICTION selects a restricted bucket endpoint. All use server-side names, never NEXT_PUBLIC_. Only a signed-in singleton administrator with a same-origin request can obtain a two-minute UploadPart capability for one UUID/source, one multipart session and part 1. The URL signs the selected file size. It carries an expiring signature/non-secret credential identifier, never the secret key or general bucket credentials.
+
+This refines the technical plan's direct PUT proposal: Vercel's 4.5 MB body ceiling rules out forwarding full 4000px JPEGs through a single application request. A single-part multipart upload permits direct browser bytes while **server-only completion/abort** prevents old upload URLs from recreating final source objects after cleanup. ListParts validates part count/size before completion. The server downloads/verifies SHA-256 and actual JPEG pixels; no client metadata is trusted for publication. No queue, chunk-resume platform, new backend or public bucket is introduced. Narrow exact-origin PUT CORS is a manual bucket setting.
+
+## D014 — UUID storage and deterministic metadata
+
+The owner's Milestone 3 namespace is `<photo-id>/source.jpg` plus large/medium/thumbnail/tiny WebPs, stored as one UUID prefix. This replaces the earlier example's optional photos/two-character prefix; the Bible's example namespace is not a product identity requirement. Photo IDs, not filenames or slugs, remain stable. Source bytes are preserved unchanged, including private EXIF GPS. Admin-only source streaming is separate from metadata-free derivative previews. Future public delivery must not expose the raw source's GPS.
+
+Sharp auto-orients and creates aspect-preserving, non-upscaled 2400/1600/600/300 long-edge WebPs at quality 85/82/80/75, effort 4, with metadata stripped. EXIF is parsed by exifr without turning wall-time strings into inferred timezone dates. Only a known original offset is stored. Missing/invalid optional tags become null; no invented camera/location/time/caption. Valid RGB JPEGs up to 4000px/16 megapixels and 25 MiB are accepted; source export quality/sharpening and an untagged file's exact source profile are not inferable. Ten eligible files maximum, sequential per-file processing. Optional metadata absence never rejects valid pixels.
+
+## D015 — Durable idempotency and compensating cleanup
+
+New `import_items` stores UUID, batch, filename, SHA-256, size, classification, operational state, multipart ID, lease/token and a safe recovery message. It is a small private operation ledger, not an editorial entity or background queue. RLS grants access only to the singleton administrator. Ten invoker-rights RPCs make reservations/claims/finalization/deletion atomic and keep the original Photo model/grants/RLS unchanged. An active source checksum is unique among managed requests. Exact byte duplicates reuse the existing request/Photo without overwriting classification/editorial data; distinct exports are not reconciled. Deleted request tombstones preserve history; a deliberately reselected deleted file may receive a new UUID.
+
+No Photo row is inserted until source verification and all derivatives succeed; it is created ready, Draft, unfeatured and Travel with no invented assignments. Finalization and import counters commit together. If a DB response is lost, confirm the Photo before removing any bytes; uncertain reads retain the operation rather than guessing failure. Known failures abort multipart sessions and delete/verify all five known keys, then mark failed or cleanup_required. Hard interruptions retain a traceable prefix and lease for manual cleanup. Upload failures can cancel their own uploading token immediately; active processors cannot be cancelled this way. Leases expire after ten minutes for browser upload, five for server operations; route maxDuration is 120 seconds.
+
+Deletion first checks cover references, withdraws publication/Featured/readiness, and claims the operation. It aborts incomplete uploads, deletes all five objects and verifies absence before deleting the Photo row. Failures leave a hidden, non-ready row with retryable deletion status. Lightroom and unrelated records are untouched. Do not delete Photo rows directly in SQL in place of this protocol. General orphan sweeping/replacement is deferred.
+
+## D016 — Classification, private media and publication UI
+
+Folder selection preserves webkitRelativePath where supported. Personal segments override all other classification and are skipped **before** byte reads, hashes or network uploads. Nice/Record folders classify deterministically; conflicting classifications block import. Loose-file drag/drop and file selection require an explicit fallback and confirmation that Personal files were excluded. The application cannot infer a lost folder or identify Personal content from pixels. Recursive drag/drop folder traversal is deferred; the folder picker is the supported path-preserving option.
+
+Photos list/import/detail/edit stay under protected /admin. Private preview/source routes independently validate Auth + singleton identity and use private/no-store responses. Next Image is unoptimized for these local authenticated routes, preventing a shared optimizer from retrieving private images. GPS is shown only in admin; public safe-column grants remain unchanged. No public Photo/media routes are added.
+
+Travel edit actions verify database-derived Trip/Location membership even for a complete Draft assignment and run existing publication preflight against required parents. Published requires ready source/derivatives, actual membership and Published Trip/Location; Featured also requires Nice. RLS independently hides children if a parent changes after validation. Covers remain deferred. Hotel schema compatibility remains intact; no Hotel photo UI or artificial Stays/Locations.
+
+## D017 — Dependency and test boundaries
+
+Pinned AWS SDK 3.1130.0, Sharp 0.35.5 and exifr 7.1.3 implement the pipeline without a framework/ORM change. SDK release-age checks remain enabled; the September 10 SDK release is used rather than accepting newly published packages. Tests use real Sharp JPEG/WebP/EXIF processing, embedded PostgreSQL RPC/RLS/constraints and a fake object/multipart store. No production bucket access is required. Production smoke tests prove private route rejection and absence of public Photo pages; the actual Lightroom/CORS/R2/Vercel performance proof remains an explicit owner test.

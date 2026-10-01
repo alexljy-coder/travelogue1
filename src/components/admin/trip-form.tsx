@@ -23,7 +23,7 @@ export function TripForm({ trip }: { trip?: Trip }) {
     <div className="field"><label htmlFor={`${formId}-purpose`}>Purpose (optional)</label><select id={`${formId}-purpose`} name="purpose" defaultValue={state.values?.purpose ?? trip?.purpose ?? ''}><option value="">Not specified</option><option value="leisure">Leisure</option><option value="business">Business</option><option value="family">Family</option><option value="photography">Photography</option><option value="mixed">Mixed</option></select><span className="field-error">{state.errors?.purpose}</span></div>
     <DescriptionField formId={formId} state={state} initial={trip?.description} />
     <Field formId={formId} state={state} name="editorial_order" label="Display position (optional)" type="number" step={1} min={0} initial={trip?.editorial_order} />
-    <p className="hint">Cover selection will be available after photo importing. Any existing cover is preserved.</p>
+    <p className="hint">Cover selection is deferred to a later milestone. Any existing cover is preserved.</p>
     <button disabled={pending} type="submit">{pending ? 'Saving…' : trip ? 'Save Trip' : 'Create Trip'}</button>
   </form>;
 }

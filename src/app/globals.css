@@ -40,3 +40,11 @@ table { width: 100%; border-collapse: collapse; min-width: 32rem; }
 th, td { padding: .8rem .5rem; text-align: left; border-bottom: 1px solid #ddd8cf; }
 .pagination { display: flex; gap: 1rem; margin-top: 1rem; }
 @media (max-width: 38rem) { .field-pair, .dashboard-links { grid-template-columns: 1fr; } }
+.admin-photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: start; }
+.admin-photo-grid img { width: 100%; height: auto; display: block; }
+.admin-photo-grid h2 { font-size: 1rem; overflow-wrap: anywhere; }
+.admin-photo-preview { display: block; max-width: 100%; width: auto; max-height: 70vh; height: auto; margin-bottom: 1rem; }
+.photo-metadata { display: grid; grid-template-columns: minmax(100px, 180px) minmax(0, 1fr); gap: .5rem 1rem; }
+.photo-metadata dd { margin: 0; overflow-wrap: anywhere; }
+.drop-area { padding: 1.5rem; border: 1px dashed #aaa; margin: 1rem 0; }
+.import-results { padding-left: 1.5rem; overflow-wrap: anywhere; }

@@ -44,11 +44,22 @@ async function unusedPort() {
     assert.ok(destination === '/admin/login?issue=unauthenticated' || destination === '/admin/login?issue=config');
     const configured = destination === '/admin/login?issue=unauthenticated';
     assert.match(admin.headers.get('cache-control') ?? '', /no-store/);
-    for (const path of ['/admin/trips', '/admin/trips/new', '/admin/trips/30000000-0000-4000-8000-000000000001', '/admin/locations', '/admin/locations/new', '/admin/locations/40000000-0000-4000-8000-000000000001']) {
+    for (const path of ['/admin/trips', '/admin/trips/new', '/admin/trips/30000000-0000-4000-8000-000000000001', '/admin/locations', '/admin/locations/new', '/admin/locations/40000000-0000-4000-8000-000000000001', '/admin/photos', '/admin/photos/import', '/admin/photos/70000000-0000-4000-8000-000000000001']) {
       const response = await fetch(`${base}${path}`, { redirect: 'manual' });
       assert.equal(response.status, 307, path);
       assert.equal(response.headers.get('location'), destination, path);
       assert.match(response.headers.get('cache-control') ?? '', /no-store/, path);
+    }
+    for (const operation of ['batch','prepare','process','cleanup','finish','cancel']) {
+      const response = await fetch(`${base}/admin/photos/api/${operation}`, { method: 'POST', headers: { origin: base, 'Content-Type': 'application/json' }, body: '{}', redirect: 'manual' });
+      assert.equal(response.status, configured ? 401 : 503, operation);
+      assert.match(response.headers.get('cache-control') ?? '', /no-store/);
+      assert.doesNotMatch(await response.text(), /X-Amz-|SecretAccessKey|cloudflarestorage/);
+    }
+    for (const path of ['/admin/photos/storage','/admin/photos/70000000-0000-4000-8000-000000000001/image/source','/admin/photos/70000000-0000-4000-8000-000000000001/image/thumbnail']) {
+      const response = await fetch(`${base}${path}`, { redirect: 'manual' });
+      assert.equal(response.status, configured ? 401 : 503, path);
+      assert.match(response.headers.get('cache-control') ?? '', /no-store/);
     }
 
     const login = await fetch(`${base}/admin/login`);
@@ -63,6 +74,8 @@ async function unusedPort() {
     assert.equal((await fetch(`${base}/signup`)).status, 404);
     assert.equal((await fetch(`${base}/admin/register`)).status, 404);
     assert.equal((await fetch(`${base}/trips/example`)).status, 404);
+    assert.equal((await fetch(`${base}/photos`)).status, 404);
+    assert.equal((await fetch(`${base}/photos/70000000-0000-4000-8000-000000000001`)).status, 404);
     console.log(`Production smoke passed: ${configured ? 'configured/no-session' : 'missing configuration'}, private redirects, no registration routes.`);
   } finally {
     const exited = once(server, 'exit');

@@ -1,12 +1,12 @@
 # V1 technical plan
 
-Milestone 1 implements the local application, database and authentication foundation. Hosted setup remains an explicit operator step. Product authority: [buildbible.md](./buildbible.md), read in full; it is unchanged. Owner resolutions and implementation decisions: [decisions.md](./decisions.md).
+Milestones 1–2 implement the foundation and Trip/Location workflow; hosted verification is complete per the owner's instructions. Milestone 3 implements private photo ingestion and admin management locally, with an explicit controlled R2/hosted verification step. Product authority: [buildbible.md](./buildbible.md), read in full; it is unchanged. Owner resolutions and implementation decisions: [decisions.md](./decisions.md).
 
 ## 1. Repository and infrastructure
 
 Initially this repository contained only the Build Bible and Git metadata. Milestone 1 adds a TypeScript Next.js App Router application, a versioned SQL migration, generated database types, security tests and setup documentation. Git checks now use the available bundled Git runtime; no tracked changes to the Build Bible were made.
 
-GitHub/Vercel/Supabase/R2 resources are user-reported. No hosted database, Auth settings, account, Vercel deployment or R2 configuration has been inspected or changed: no project connection is available. Inspect existing Supabase objects/history before applying the migration. [supabase-setup.md](./supabase-setup.md) gives exact steps. No R2 credentials are needed in Milestones 0–2.
+GitHub/Vercel/Supabase/R2 resources and Milestones 1–2 hosted verification are owner-reported. The agent has not modified remote infrastructure. Inspect existing Supabase migration history before applying any new migration. [supabase-setup.md](./supabase-setup.md) describes the foundation; [r2-setup.md](./r2-setup.md) describes Milestone 3 credentials/CORS/migration/manual testing. R2 credentials first become necessary in Milestone 3.
 
 ## 2. Review and resolved decisions
 
@@ -15,7 +15,7 @@ No fundamental stack/product conflict was found. Resolutions:
 - Photo URLs are `/photos/[id]`; no Photo slug column. Hotel aggregate uses `/stays/[hotelSlug]`, individual visit `/stays/[hotelSlug]/[stayId]`. Those pages are deferred.
 - Required unpublished parents hide stored Published children through RLS; no cascades of publication flags. Future publish actions use database-derived parent snapshots for preflight.
 - Featured requires Published + Nice. Trip covers additionally require Travel and that Trip; Hotel/Stay cover photography requires Hotel context and the matching Hotel/Stay. Location covers use matching Travel photos. Foreign keys prevent dangling covers; application selection/preflight enforces editorial eligibility and public queries must resolve effective visibility.
-- Optional editorial_order exists on Photos/Trips/Locations/Hotels/Stays; join sequence remains optional. Future ordering: explicit value first, then captured_at DESC NULLS LAST for photos, then created_at DESC/id for deterministic ties. No ordering UI now.
+- Optional editorial_order exists on Photos/Trips/Locations/Hotels/Stays; join sequence remains optional. Future public ordering: explicit value first, then captured_at DESC NULLS LAST for photos, then created_at DESC/id for deterministic ties. Admin numeric ordering inputs exist; drag-and-drop is deferred.
 - Stay purpose is Business/Leisure/Family/Mixed, optional; Trip also permits Photography.
 - stays.internal_notes is private and separate from public review_text. Photo GPS is preserved but excluded from public column grants and all public projections. Public geographic positions come from Locations/Hotels.
 - Countries/Cities retain no artificial publication states; only geography reachable from published content is anonymous-readable.
@@ -28,7 +28,7 @@ Remaining implementation risks, not reasons to alter the product: browser folder
 
 One Next.js application on Vercel contains public routes, /admin, server actions and future bounded route handlers. Supabase holds relational metadata/Auth/RLS; Cloudflare provides DNS/network controls and later private R2 object storage; GitHub versions code/migrations; Lightroom owns photographic masters. No separate backend, ORM, CMS, Redux, GraphQL or microservices.
 
-Pinned dependencies: Next.js 16.3.6, React 19.3.0, supabase-js 2.117.2, @supabase/ssr 0.12.7, Zod 4.6.5. Node.js 24, pnpm 11.19.0 and pnpm-lock.yaml replace the initial npm proposal because the available local runtime supplies pnpm. Next was initialized manually using its documented installation path, avoiding generator boilerplate/unrequested UI. TypeScript 5.9.3 and ESLint 9.39.5 match the current Next lint-plugin peer ranges. ESLint 9 emits an upstream support/deprecation notice; compatibility is recorded rather than ignored. Reassess when Next's lint dependency stack supports ESLint 10. Dependencies are exact-pinned; no release-age checks were disabled. Native test/lint installation scripts are explicitly allowed in pnpm-workspace.yaml.
+Pinned dependencies: Next.js 16.3.6, React 19.3.0, supabase-js 2.117.2, @supabase/ssr 0.12.7, Zod 4.6.5; Milestone 3 adds AWS S3 SDK/request presigner 3.1130.0, Sharp 0.35.5 and exifr 7.1.3. Node.js 24, pnpm 11.19.0 and pnpm-lock.yaml replace the initial npm proposal because the available local runtime supplies pnpm. Next was initialized manually using its documented installation path, avoiding generator boilerplate/unrequested UI. TypeScript 5.9.3 and ESLint 9.39.5 match the current Next lint-plugin peer ranges. ESLint 9 emits an upstream support/deprecation notice; compatibility is recorded rather than ignored. Reassess when Next's lint dependency stack supports ESLint 10. Dependencies are exact-pinned; release-age checks remain enabled, using the September 10 SDK release. Native test/lint installation scripts are explicitly allowed in pnpm-workspace.yaml.
 
 Use server components for public rendering, server-side form actions for login/logout and a small client login form for pending/error state. No browser Auth client is needed now: auth cookies are HttpOnly, Secure in production, SameSite=Lax. A future importer uses same-origin authenticated server endpoints; revisit cookie strategy explicitly before adding client-side Auth. No privileged service key in the application.
 
@@ -38,7 +38,7 @@ Public caching is deferred until publishing/UI exists and privacy checks pass. A
 
 ## 4. Implemented schema specification
 
-The authoritative executable implementation is [20260930000100_v1_foundation.sql](../supabase/migrations/20260930000100_v1_foundation.sql). It creates schema, constraints, grants and RLS atomically, rather than exposing a partially secured schema between migrations. It has not been applied remotely.
+The foundation is [20260930000100_v1_foundation.sql](../supabase/migrations/20260930000100_v1_foundation.sql), followed by [Milestone 2 transactions](../supabase/migrations/20260930000200_admin_geography_workflow.sql). Both are applied/verified per the owner. [20261001000100_private_photo_ingestion.sql](../supabase/migrations/20261001000100_private_photo_ingestion.sql) is new and requires manual hosted application. Applied migrations are unchanged.
 
 | Table | Representation |
 | --- | --- |
@@ -52,6 +52,7 @@ The authoritative executable implementation is [20260930000100_v1_foundation.sql
 | stays | Required Hotel and Trip; optional independent check-in/out dates, room type, purpose, whole rating, public review_text and private internal_notes; status/order/timestamps; repeated Hotel/Trip pair allowed |
 | photos | UUID URL identity; required source filename/storage prefix/SHA-256 hash/dimensions/byte size/classification/context; caption/description; Featured/status/order; optional assignments; optional EXIF; import-batch link; processing readiness; timestamps. No slug |
 | import_batches | Simple private import counts/history and pending/processing/completed/failed state; no reconciliation/version management |
+| import_items | Milestone 3 private per-file UUID/hash/size/classification, batch, multipart ID, state/error and claim/lease; bounded idempotency and cleanup, no job queue |
 | private.admin_identity | Singleton row with FK to auth.users; no exposed schema or browser-editable identity |
 
 UUIDs default to gen_random_uuid(). created_at defaults to now(); mutable entities use a small shared updated_at trigger. Human-readable entity slugs are lowercase hyphenated text; no sequential public IDs. Finite state values use text CHECK constraints. Whole ratings are smallint 1–5. Optional dates compare only when both present; either endpoint may be null. A known Stay date outside entered Trip dates is not forbidden. Coordinates are paired or both null and range checked. Photo focal length/aperture/ISO are positive if supplied. captured_at is an offset-free local timestamp; captured_at_offset_minutes records only a known offset (-840..840). Shutter fractions are text. Hashes are indexed, not unique: no duplicate reconciliation feature.
@@ -70,11 +71,11 @@ RESTRICT FKs protect entities, joins and covered Photos from accidental deletion
 
 FK/reverse join indexes support relationships. Composite photo indexes cover Trip/Location/Stay plus status/classification; Stay indexes cover Hotel/Trip plus status. No manually persisted travel counts/days/review totals. Hotel rating is independent of Stay ratings; no auto-average. No PostGIS or separate map database.
 
-Generated src/types/database.ts comes from the freshly migrated PostgreSQL catalog and includes FK relationship types. A committed generator and drift check avoid needing Docker or hosted secrets; deployed-schema comparison remains a later setup verification.
+Generated src/types/database.ts comes from the freshly migrated PostgreSQL catalog and includes FK relationships and RPC signatures/JSON types. A committed generator and drift check avoid needing Docker or hosted secrets; the owner's hosted migration history remains a separate verification step. The Photo hash index remains non-unique; a partial unique hash on active import_items prevents managed exact-byte duplicates without altering historical Photo rows.
 
 ## 5. Publishing enforcement
 
-Database constraints guarantee valid row shapes, assignment requirements, Trip–Location membership, enums, ranges and readiness. Small application validation helpers provide parent preflight and Trip/Location/Hotel/Stay cover eligibility, with tests. No publishing endpoint/UI exists yet, so these helpers are preparation rather than a claimed live publishing workflow. Later callers must fetch statuses/relationships from the database, not accept them from browser input.
+Database constraints guarantee valid row shapes, assignment requirements, Trip–Location membership, enums, ranges and readiness. Milestone 3's Travel Photo edit action runs publication preflight using database-derived parent/membership snapshots. Published Trip + Location and ready source/derivatives are required; Featured also requires Nice. Trip/Location status controls already exist. Cover and Hotel/Stay publication workflows remain deferred, with tested helpers. No parent status is trusted from browser input.
 
 RLS independently prevents publication races or direct API writes from exposing children below Draft required parents. Unpublishing a Trip hides its Travel photos and Stays/Hotel photos. Unpublishing a Hotel or Stay hides the corresponding Hotel photos. Unpublishing a Location hides its Travel photos. Stored child flags remain unchanged. A stale cover pointer never grants Photo visibility: public resolution must query through anonymous RLS.
 
@@ -105,6 +106,7 @@ Every archive table has RLS enabled, default PUBLIC/anon/authenticated privilege
 | cities | Reachable from visible Location/Hotel/trip_cities |
 | countries | Reachable from visible City |
 | import_batches | No access |
+| import_items | No access |
 
 Policies form a one-way dependency graph, avoiding recursive RLS: base Trip/Location/Hotel → Stay → Photo; joins → base parents; City → Location/Hotel/trip_cities; Country → City. Parent base policies do not query geography. Anonymous column grants omit exact photo GPS, offsets, source names/keys/hashes/import metadata/processing state and Stay internal_notes. There are no owner-bypassing public views. Explicit public projection constants support future reads; SELECT * intentionally fails for anonymously restricted tables.
 
@@ -121,43 +123,54 @@ src/app/admin/login/{page,login-form}.tsx # private sign-in
 src/app/admin/login/actions.ts
 src/app/admin/(protected)/{layout,page}.tsx
 src/app/admin/(protected)/actions.ts     # independently guarded sign-out
+src/app/admin/(protected)/content-actions.ts
+src/app/admin/(protected)/{trips,locations}/{page,new/page,[id]/page}.tsx
+src/app/admin/(protected)/photos/{page,import/page,[id]/page}.tsx
+src/app/admin/(protected)/photos/actions.ts
+src/app/admin/(protected)/photos/api/[operation]/route.ts
+src/app/admin/(protected)/photos/[id]/image/[variant]/route.ts
+src/app/admin/(protected)/photos/storage/route.ts
+src/components/admin/                   # forms, navigation, importer/recovery
 src/proxy.ts                            # admin-only session refresh/no-store
 src/lib/supabase/{env,public,server}.ts
 src/lib/auth/{check-admin,require-admin}.ts
 src/lib/validation/{login,publishing}.ts
 src/lib/data/public-columns.ts
+src/lib/{admin,photos,r2}/
 src/types/database.ts
 supabase/{config.toml,migrations/,tests/}
 tests/, scripts/, docs/
 .github/workflows/checks.yml
 ```
 
-Future routes remain unimplemented: Photos/[id], Trips/[slug], Locations/[slug], Stays/[hotelSlug]/[stayId], Map, About and content-management admin sections. Do not create unused placeholder feature trees. Future importer/media handlers stay inside this application. Future image processing uses Node.js/Sharp, not Edge runtime. Choose a map library/tile provider at the map milestone, considering attribution, cost and privacy. Branding/domain remain replaceable configuration.
+Future public routes remain unimplemented: Photos/[id], Trips/[slug], Locations/[slug], Stays/[hotelSlug]/[stayId], Map and About. Hotel/Stay admin sections remain deferred. Image processing/media routes use Node.js/Sharp, not Edge runtime, within this application. Choose a map library/tile provider at its milestone. Branding/domain remain replaceable configuration.
 
-## 8. Future importer/R2 — deferred
+## 8. Milestone 3 private importer/R2 architecture
 
-No credentials, SDKs, CORS configuration, bucket changes, uploads or derivatives now. Later:
+All remote bucket/token/CORS/migration changes are manual. See [r2-setup.md](./r2-setup.md). The implemented pipeline:
 
-1. Scan retained folder paths; skip Personal before reading image bytes/EXIF/hashes. Unclassified bare files need explicit Nice/Record assignment. Use a folder-picker fallback where needed.
-2. Extract eligible JPEG metadata. Suggestions prioritize existing Locations/GPS proximity/date/time/selected Trip; never auto-decide Hotel context, invent destinations or publish automatically.
-3. Authenticated server generates UUID/object namespace and short-lived object-scoped PUT signature; browser uploads directly to private R2. Server-scoped credentials and narrow bucket permissions never enter browser/Git. CORS restricts actual approved origins/methods; it is not authorization.
-4. Verify actual JPEG bytes/type/size/dimensions/orientation/hash, not just client metadata. Export target is 4000px long-edge sRGB JPEG, quality 88; Lightroom retains RAW/masters. Handle incompatible files explicitly rather than rewriting photographic truth.
-5. Process one photo per bounded idempotent Node/Sharp request. Produce aspect-preserving WebP long edges approximately 2400/1600/600/300, without upscaling. Prefix photos/<uuid-first-two>/<uuid>/ derives source.jpg, large.webp, medium.webp, thumbnail.webp and tiny.webp; store one prefix, not five URLs.
-6. Mark ready only after validated source/all derivatives exist; imports remain Draft until reviewed. Processing retries are technical recovery, not photo version/replacement reconciliation. Conservative explicit orphan cleanup.
-7. Verify ten-photo batch on actual Vercel plan. If single-photo processing cannot fit runtime/memory limits, document a real technical conflict before adding a processing service.
+1. Browser scans file metadata/retained paths. Personal is skipped before reading bytes; known folders map to Nice/Record. Unclassified loose files require an explicit choice and Personal-exclusion confirmation. Folder picker preserves paths where supported; drag/drop handles loose files only. Ten eligible JPEGs maximum, 25 MiB each.
+2. Browser hashes only eligible JPEGs. An authenticated same-origin JSON request creates a batch and reserves a stable per-file UUID/hash. Active exact-byte duplicates reuse existing data without replacement.
+3. Server creates a **single-part multipart upload** and signs part 1 for two minutes, including its length. The browser PUTs bytes directly to R2; only the server uses the SDK/reusable credentials and can complete/abort the upload. This avoids Vercel's 4.5 MB request limit. Unlike a reusable source PUT, an aborted/completed multipart session cannot be recreated by an old part URL. Exact-origin PUT CORS is required; no public bucket is needed.
+4. Server claims completion, lists/checks part count/size, completes the source, downloads at most 25 MiB, verifies SHA-256 and validates actual JPEG dimensions/format. Source bytes are retained untouched. Sharp normalizes orientation in derivatives; exifr reads optional EXIF with no invented timezone/coordinates.
+5. One Node request generates sequential, non-upscaled WebP long edges 2400/1600/600/300. Quality 85/82/80/75, effort 4. Strip metadata (especially GPS) and preserve aspect ratio. Use `<photo-id>/source.jpg`, large.webp, medium.webp, thumbnail.webp, tiny.webp; store `<photo-id>/` as one prefix. These exact UUID keys follow the owner's current milestone instructions rather than the earlier example prefix.
+6. Only after all objects exist does the finalization RPC create a ready Draft Travel Photo and update batch counters atomically. Trip/Location are assigned in protected edit UI afterward. No Hotel UI, invented entity, auto-publication or importer suggestions are added.
+7. Known failures abort incomplete sessions and delete/verify known objects. Durable import_items retain failed/cleanup_required state. Uncertain commit responses are checked before destructive compensation; uncertain reads remain recoverable. Per-file leases prevent concurrent work. An interrupted process can be cleaned after its lease expires, without introducing a queue/sweeper. Successful deletions preserve import history.
+8. Admin media routes validate Auth + singleton identity separately and stream only ready Photos with private/no-store. Raw sources may contain GPS and remain administrator-only. Next Image uses unoptimized authenticated local routes. Photo editing validates actual parent/membership/Featured requirements; RLS remains the final public privacy boundary.
+9. Photo deletion rejects cover references, hides the row before touching bytes, aborts incomplete sessions, deletes/verifies all five keys and then removes the Photo. Partial failures retain a hidden retryable row. No silent archive cascades or Lightroom changes.
 
-Keep sources and derivatives private, including Drafts. Same-app media delivery looks up effective visibility before streaming server-authenticated R2 bytes. Draft previews require admin and no-store. Short-lived signed GETs have expiry/withdrawal tradeoffs; streaming is the initial preference. No public r2.dev or random-key privacy scheme. No shared media caching until explicit withdrawal/cache tests exist; downloaded images cannot be recalled. Responsive delivery uses existing derivatives, avoiding redundant on-demand transformations.
+Keep all objects private. Milestone 4 must add effective-public-visibility checks to a separate derivative-only read route and verify unpublish/cache behavior. Raw GPS-bearing sources must not become public; no public signed GETs, CDN or shared caching exists now. Automated tests use fake R2 and real embedded PostgreSQL/Sharp. Hosted CORS, credentials, SDK transport and actual Vercel time/memory need the controlled ten-photo proof; no remote resources have been modified.
 
-Future R2 environment names are documented only: R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY. Add empty .env.example entries when that milestone begins, not now.
+Required server names: R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY. Optional R2_JURISDICTION supports restricted endpoints. Empty names are now in .env.example. No real credentials or public-prefixed R2 values are committed.
 
 ## 9. Implementation milestones
 
 | Milestone | Scope | Acceptance gate |
 | --- | --- | --- |
 | 0 — Complete | Review/planning | Bible unchanged; open decisions explicitly recorded |
-| 1 — Local foundation implemented | Shell, schema/constraints/RLS, single-admin login/shell, security tests/types/CI | Lint/typecheck/tests/build; fresh migration and privacy tests. Hosted migration/account/signups/preview smoke steps separately required |
-| 2 — Trip/Location workflow | Country/City selection, Trip and Location CRUD, transactional joins, optional dates/status | Create undated Trip and Location, associate/edit; rejected unsafe deletion; Drafts private. No R2 |
-| 3 — Ten-photo import/storage | Connect R2 then, eligible folder scanning, private uploads, derivatives, Draft assignment/history | ~10 JPEGs; Personal zero-byte reads/uploads; orientation/aspect/unknown EXIF; retry/failure privacy |
+| 1 — Complete, owner-verified hosted | Shell, schema/constraints/RLS, single-admin login/shell, security tests/types/CI | Local checks and owner hosted verification complete |
+| 2 — Complete, owner-verified hosted | Country/City selection, Trip and Location CRUD, transactional joins, optional dates/status | Undated Trip/Location/memberships; safe deletion; Drafts private |
+| 3 — Implemented locally, hosted proof pending | Private R2 capabilities, derivatives/EXIF, Draft import/history, Travel edit/publication, secure admin previews/deletion | Controlled ~10 JPEGs; Personal zero-byte reads/uploads; orientation/GPS/aspect/unknown EXIF; retry/failure/deletion privacy |
 | 4 — First meaningful vertical slice | Review/publish + minimal public Trip | Create Trip → Location → associate → import ~10 JPEGs → assign → publish → public Trip. Nice/Record/Personal and anon/API/media/unpublish tests |
 | 5 — Hotel/Stay workflows | Repeat Stays, optional reviews/dates, Hotel photos, public aggregate/detail | Two Stays on one Hotel; no artificial Location or Hotel images in Trip galleries; privacy/correct counts |
 | 6 — Importer refinement | Existing-Location suggestions/grouping/batch exceptions | No invented context/entity/publication; uncertain assignments Draft; browser compatibility |

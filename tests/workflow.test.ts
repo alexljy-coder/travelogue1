@@ -16,7 +16,7 @@ const code = (value: string) => (error: unknown) => !!error && typeof error === 
 before(async () => { db = await createTestDatabase(); });
 after(async () => { await db?.close(); });
 beforeEach(async () => {
-  await db.exec('truncate public.countries,public.cities,public.locations,public.trips,public.trip_cities,public.trip_locations,public.hotels,public.stays,public.photos,public.import_batches,private.admin_identity,auth.users');
+  await db.exec('truncate public.countries,public.cities,public.locations,public.trips,public.trip_cities,public.trip_locations,public.hotels,public.stays,public.photos,public.import_items,public.import_batches,private.admin_identity,auth.users');
   await db.exec(await readFile('supabase/tests/fixtures.sql', 'utf8'));
 });
 async function newTrip(slug = 'new-trip') {
@@ -110,6 +110,6 @@ test('all workflow RPCs reject anonymous and unrelated authenticated users', asy
     }
   });
   const { rows } = await db.query<{ prosecdef: boolean; proconfig: string[] }>("select prosecdef,proconfig from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname like 'admin_%'");
-  assert.equal(rows.length, 7);
+  assert.equal(rows.length, 17);
   assert.ok(rows.every((row) => !row.prosecdef && row.proconfig.includes('search_path=""')));
 });

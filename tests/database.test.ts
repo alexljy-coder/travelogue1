@@ -13,7 +13,7 @@ const location = '40000000-0000-4000-8000-000000000001';
 const hotel = '50000000-0000-4000-8000-000000000001';
 const stay = '60000000-0000-4000-8000-000000000001';
 const photo = '70000000-0000-4000-8000-000000000001';
-const tables = ['countries', 'cities', 'locations', 'trips', 'trip_cities', 'trip_locations', 'hotels', 'stays', 'photos', 'import_batches'];
+const tables = ['countries', 'cities', 'locations', 'trips', 'trip_cities', 'trip_locations', 'hotels', 'stays', 'photos', 'import_batches', 'import_items'];
 const errorCode = (code: string) => (error: unknown) => typeof error === 'object' && error !== null && 'code' in error && error.code === code;
 // PostgreSQL versions can report RESTRICT as restrict_violation or foreign_key_violation.
 const restrictedDeletion = (error: unknown) => errorCode('23001')(error) || errorCode('23503')(error);
