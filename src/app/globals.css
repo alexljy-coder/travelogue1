@@ -9,3 +9,34 @@ button { cursor: pointer; }
 button:disabled { cursor: wait; }
 a { color: inherit; }
 :focus-visible { outline: 3px solid #85462f; outline-offset: 3px; }
+
+/* Functional admin layout only; final editorial design is deferred. */
+select, textarea { font: inherit; padding: .65rem; width: 100%; border: 1px solid #bcb8b1; border-radius: .2rem; background: white; }
+input:not([type=checkbox]) { width: 100%; min-width: 0; border: 1px solid #bcb8b1; border-radius: .2rem; }
+button { border: 1px solid #a39b91; border-radius: .2rem; background: #f2eee8; color: inherit; }
+.admin-nav { display: flex; flex-wrap: wrap; gap: 1.5rem; max-width: 56rem; margin: auto; padding: 0 1.25rem 1rem; border-bottom: 1px solid #ddd8cf; }
+.admin-nav [aria-current=page] { font-weight: 700; text-decoration-thickness: 2px; }
+.page-heading { display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.editor { display: grid; gap: 1rem; max-width: 42rem; }
+.editor form, .panel form { max-width: none; }
+.field { display: grid; gap: .35rem; }
+.field-pair, .dashboard-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.panel { padding: 1rem; border: 1px solid #ddd8cf; margin: 1rem 0; border-radius: .25rem; }
+.panel h3 { margin-top: 0; }
+.hint { color: #5d5953; font-size: .9rem; margin: .25rem 0; }
+.error, .field-error { color: #9a2626; }
+.field-error:empty { display: none; }
+.success { color: #285a36; }
+[aria-invalid=true] { border-color: #9a2626; }
+.content-section { border-top: 1px solid #ddd8cf; margin-top: 2rem; padding-top: 1rem; }
+fieldset { display: grid; gap: .75rem; border: 1px solid #ddd8cf; padding: 1rem; min-width: 0; }
+summary { cursor: pointer; padding: .5rem 0; }
+.danger-zone { margin: 1rem 0; }
+.checkbox { display: flex; align-items: flex-start; gap: .5rem; }
+.checkbox input { margin-top: .25rem; }
+.danger { color: #9a2626; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 32rem; }
+th, td { padding: .8rem .5rem; text-align: left; border-bottom: 1px solid #ddd8cf; }
+.pagination { display: flex; gap: 1rem; margin-top: 1rem; }
+@media (max-width: 38rem) { .field-pair, .dashboard-links { grid-template-columns: 1fr; } }

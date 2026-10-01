@@ -14,14 +14,12 @@ async function unusedPort() {
   return address.port;
 }
 
-for (const configured of [false, true]) {
+// NEXT_PUBLIC variables are frozen into a production build. Test that build's
+// actual configuration; config validation is separately covered by unit tests.
+{
   const port = await unusedPort();
   const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', String(port)], {
-    env: {
-      ...process.env,
-      NEXT_PUBLIC_SUPABASE_URL: configured ? 'http://127.0.0.1:54321' : '',
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: configured ? 'sb_publishable_synthetic_smoke_only' : '',
-    },
+    env: { ...process.env },
     stdio: 'ignore',
   });
   const base = `http://127.0.0.1:${port}`;
@@ -42,8 +40,16 @@ for (const configured of [false, true]) {
 
     const admin = await fetch(`${base}/admin`, { redirect: 'manual' });
     assert.equal(admin.status, 307);
-    assert.equal(admin.headers.get('location'), `/admin/login?issue=${configured ? 'unauthenticated' : 'config'}`);
+    const destination = admin.headers.get('location');
+    assert.ok(destination === '/admin/login?issue=unauthenticated' || destination === '/admin/login?issue=config');
+    const configured = destination === '/admin/login?issue=unauthenticated';
     assert.match(admin.headers.get('cache-control') ?? '', /no-store/);
+    for (const path of ['/admin/trips', '/admin/trips/new', '/admin/trips/30000000-0000-4000-8000-000000000001', '/admin/locations', '/admin/locations/new', '/admin/locations/40000000-0000-4000-8000-000000000001']) {
+      const response = await fetch(`${base}${path}`, { redirect: 'manual' });
+      assert.equal(response.status, 307, path);
+      assert.equal(response.headers.get('location'), destination, path);
+      assert.match(response.headers.get('cache-control') ?? '', /no-store/, path);
+    }
 
     const login = await fetch(`${base}/admin/login`);
     assert.equal(login.status, 200);
@@ -56,6 +62,7 @@ for (const configured of [false, true]) {
     }
     assert.equal((await fetch(`${base}/signup`)).status, 404);
     assert.equal((await fetch(`${base}/admin/register`)).status, 404);
+    assert.equal((await fetch(`${base}/trips/example`)).status, 404);
     console.log(`Production smoke passed: ${configured ? 'configured/no-session' : 'missing configuration'}, private redirects, no registration routes.`);
   } finally {
     const exited = once(server, 'exit');

@@ -462,7 +462,16 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: { is_admin: { Args: Record<string, never>; Returns: boolean } };
+    Functions: {
+      admin_create_city: { Args: { p_name: string | null; p_slug: string | null; p_country_id?: string | null; p_country_name?: string | null; p_country_code?: string | null; p_country_slug?: string | null; p_latitude?: number | null; p_longitude?: number | null; }; Returns: string };
+      admin_delete_trip: { Args: { p_trip_id: string | null; }; Returns: undefined };
+      admin_remove_trip_city: { Args: { p_trip_id: string | null; p_city_id: string | null; }; Returns: undefined };
+      admin_remove_trip_location: { Args: { p_trip_id: string | null; p_location_id: string | null; }; Returns: undefined };
+      admin_save_location: { Args: { p_id: string | null; p_city_id: string | null; p_name: string | null; p_slug: string | null; p_latitude?: number | null; p_longitude?: number | null; p_description?: string | null; p_status?: string | null; p_editorial_order?: number | null; p_trip_id?: string | null; }; Returns: string };
+      admin_set_trip_city: { Args: { p_trip_id: string | null; p_city_id: string | null; p_sequence?: number | null; }; Returns: undefined };
+      admin_set_trip_location: { Args: { p_trip_id: string | null; p_location_id: string | null; p_sequence?: number | null; p_visited_at?: string | null; }; Returns: undefined };
+      is_admin: { Args: Record<string, never>; Returns: boolean };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

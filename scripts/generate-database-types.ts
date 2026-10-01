@@ -38,7 +38,28 @@ for (const table of tables) {
   }
   output += '        ];\n      };\n';
 }
-output += '    };\n    Views: Record<string, never>;\n    Functions: { is_admin: { Args: Record<string, never>; Returns: boolean } };\n    Enums: Record<string, never>;\n    CompositeTypes: Record<string, never>;\n  };\n};\n';
+type Routine = { name: string; names: string[] | null; types: string[]; defaults: number; returns: string };
+const { rows: routines } = await db.query<Routine>(`select p.proname as name, p.proargnames as names,
+  array(select format_type(t, null) from unnest(p.proargtypes::oid[]) t) as types,
+  p.pronargdefaults as defaults, format_type(p.prorettype, null) as returns
+  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public' and (p.proname='is_admin' or p.proname like 'admin_%') order by p.proname`);
+const routineType = (type: string) => type === 'void' ? 'undefined' : typeOf({ data_type: type, is_nullable: 'NO' } as Column);
+output += '    };\n    Views: Record<string, never>;\n    Functions: {\n';
+for (const routine of routines) {
+  output += `      ${routine.name}: { Args: `;
+  if (!routine.types.length) output += 'Record<string, never>';
+  else {
+    output += '{ ';
+    routine.types.forEach((type, index) => {
+      // PostgreSQL accepts explicit NULL arguments; function bodies/constraints validate them.
+      output += `${routine.names![index]}${index >= routine.types.length - routine.defaults ? '?' : ''}: ${routineType(type)} | null; `;
+    });
+    output += '}';
+  }
+  output += `; Returns: ${routineType(routine.returns)} };\n`;
+}
+output += '    };\n    Enums: Record<string, never>;\n    CompositeTypes: Record<string, never>;\n  };\n};\n';
 await db.close();
 const path = 'src/types/database.ts';
 if (process.argv.includes('--check')) {
