@@ -1,12 +1,12 @@
 # V1 technical plan
 
-Milestones 1–2 implement the foundation and Trip/Location workflow; hosted verification is complete per the owner's instructions. Milestone 3 implements private photo ingestion and admin management locally, with an explicit controlled R2/hosted verification step. Product authority: [buildbible.md](./buildbible.md), read in full; it is unchanged. Owner resolutions and implementation decisions: [decisions.md](./decisions.md).
+Milestones 1–2 implement the foundation and Trip/Location workflow; hosted verification is complete per the owner's instructions. Milestone 3 private photo ingestion has been manually verified locally and on Vercel against hosted Supabase/R2, as confirmed by the owner. Milestone 4 implements the first public photography experience. Product authority: [buildbible.md](./buildbible.md), read in full; it is unchanged. Owner resolutions and implementation decisions: [decisions.md](./decisions.md).
 
 ## 1. Repository and infrastructure
 
 Initially this repository contained only the Build Bible and Git metadata. Milestone 1 adds a TypeScript Next.js App Router application, a versioned SQL migration, generated database types, security tests and setup documentation. Git checks now use the available bundled Git runtime; no tracked changes to the Build Bible were made.
 
-GitHub/Vercel/Supabase/R2 resources and Milestones 1–2 hosted verification are owner-reported. The agent has not modified remote infrastructure. Inspect existing Supabase migration history before applying any new migration. [supabase-setup.md](./supabase-setup.md) describes the foundation; [r2-setup.md](./r2-setup.md) describes Milestone 3 credentials/CORS/migration/manual testing. R2 credentials first become necessary in Milestone 3.
+GitHub/Vercel/Supabase/R2 resources and Milestones 1–3 hosted verification are owner-reported. The agent has not modified remote infrastructure. Inspect existing Supabase migration history before applying any new migration. [supabase-setup.md](./supabase-setup.md) describes the foundation; [r2-setup.md](./r2-setup.md) describes Milestone 3 credentials/CORS/migration/manual testing. R2 credentials first become necessary in Milestone 3.
 
 ## 2. Review and resolved decisions
 
@@ -30,15 +30,15 @@ One Next.js application on Vercel contains public routes, /admin, server actions
 
 Pinned dependencies: Next.js 16.3.6, React 19.3.0, supabase-js 2.117.2, @supabase/ssr 0.12.7, Zod 4.6.5; Milestone 3 adds AWS S3 SDK/request presigner 3.1130.0, Sharp 0.35.5 and exifr 7.1.3. Node.js 24, pnpm 11.19.0 and pnpm-lock.yaml replace the initial npm proposal because the available local runtime supplies pnpm. Next was initialized manually using its documented installation path, avoiding generator boilerplate/unrequested UI. TypeScript 5.9.3 and ESLint 9.39.5 match the current Next lint-plugin peer ranges. ESLint 9 emits an upstream support/deprecation notice; compatibility is recorded rather than ignored. Reassess when Next's lint dependency stack supports ESLint 10. Dependencies are exact-pinned; release-age checks remain enabled, using the September 10 SDK release. Native test/lint installation scripts are explicitly allowed in pnpm-workspace.yaml.
 
-Use server components for public rendering, server-side form actions for login/logout and a small client login form for pending/error state. No browser Auth client is needed now: auth cookies are HttpOnly, Secure in production, SameSite=Lax. A future importer uses same-origin authenticated server endpoints; revisit cookie strategy explicitly before adding client-side Auth. No privileged service key in the application.
+Use server components for public rendering, server-side form actions for login/logout and a small client login form for pending/error state. No browser Auth client is needed now: auth cookies are HttpOnly, Secure in production, SameSite=Lax. The importer uses same-origin authenticated server endpoints; revisit cookie strategy explicitly before adding client-side Auth. No privileged service key in the application.
 
-Public database clients never inherit administrator cookies and fetch no-store. Admin clients use validated session cookies and no-store requests. Next.js 16 proxy refreshes sessions only under /admin; protected page/layout and sign-out independently call requireAdmin. getUser validates identity with Auth; is_admin RPC independently verifies the private singleton. An unconfigured project fails closed, while the public placeholder still builds without secrets. Default Server Action origin checks remain intact; no wildcard origins configured.
+Public database clients never inherit administrator cookies and fetch no-store. Admin clients use validated session cookies and no-store requests. Next.js 16 proxy refreshes sessions only under /admin; protected page/layout and sign-out independently call requireAdmin. getUser validates identity with Auth; is_admin RPC independently verifies the private singleton. An unconfigured project fails closed; public indices show a quiet unavailable state and still build without secrets. Default Server Action origin checks remain intact; no wildcard origins configured.
 
-Public caching is deferred until publishing/UI exists and privacy checks pass. Adopt the pinned Next release's documented cache APIs then; invalidate related parent/detail/index/map/media paths after changes. Never cache authenticated data or draft previews. Initially visibility-checked media responses also avoid shared caching. No custom caching system.
+Public pages and derivative routes remain dynamic/no-store in Milestone 4. Each image request checks anonymous effective visibility; no shared HTML/image cache can outlive unpublication. React cache only deduplicates detail metadata/page reads within a request. Shared caching needs a separately verified parent-aware invalidation design; it is not necessary for this small first experience. Never cache authenticated data or draft previews.
 
 ## 4. Implemented schema specification
 
-The foundation is [20260930000100_v1_foundation.sql](../supabase/migrations/20260930000100_v1_foundation.sql), followed by [Milestone 2 transactions](../supabase/migrations/20260930000200_admin_geography_workflow.sql). Both are applied/verified per the owner. [20261001000100_private_photo_ingestion.sql](../supabase/migrations/20261001000100_private_photo_ingestion.sql) is new and requires manual hosted application. Applied migrations are unchanged.
+The foundation is [20260930000100_v1_foundation.sql](../supabase/migrations/20260930000100_v1_foundation.sql), followed by [Milestone 2 transactions](../supabase/migrations/20260930000200_admin_geography_workflow.sql). Both are applied/verified per the owner. [20261001000100_private_photo_ingestion.sql](../supabase/migrations/20261001000100_private_photo_ingestion.sql) has been applied and verified per the owner. Applied migrations are unchanged.
 
 | Table | Representation |
 | --- | --- |
@@ -118,7 +118,12 @@ Implemented:
 
 ```text
 src/app/layout.tsx, globals.css
-src/app/(public)/page.tsx                 # minimal placeholder only
+src/app/(public)/{layout,page,error,not-found}.tsx, public.css
+src/app/(public)/photos/{page,[id]/page}.tsx
+src/app/(public)/photos/[id]/image/[variant]/route.ts
+src/components/public/photograph.tsx
+src/lib/data/{public-photos,public-archive}.ts
+src/lib/photos/public-image.ts
 src/app/admin/login/{page,login-form}.tsx # private sign-in
 src/app/admin/login/actions.ts
 src/app/admin/(protected)/{layout,page}.tsx
@@ -143,7 +148,7 @@ tests/, scripts/, docs/
 .github/workflows/checks.yml
 ```
 
-Future public routes remain unimplemented: Photos/[id], Trips/[slug], Locations/[slug], Stays/[hotelSlug]/[stayId], Map and About. Hotel/Stay admin sections remain deferred. Image processing/media routes use Node.js/Sharp, not Edge runtime, within this application. Choose a map library/tile provider at its milestone. Branding/domain remain replaceable configuration.
+Photos and UUID detail are implemented. Public Trips/[slug], Locations/[slug], Stays/[hotelSlug]/[stayId], Map and About remain unimplemented. Their navigation labels are intentionally disabled, without broken links or invented content. Hotel/Stay admin sections remain deferred. Image processing/media routes use Node.js/Sharp, not Edge runtime, within this application. Choose a map library/tile provider at its milestone. Branding/domain remain replaceable configuration.
 
 ## 8. Milestone 3 private importer/R2 architecture
 
@@ -159,7 +164,7 @@ All remote bucket/token/CORS/migration changes are manual. See [r2-setup.md](./r
 8. Admin media routes validate Auth + singleton identity separately and stream only ready Photos with private/no-store. Raw sources may contain GPS and remain administrator-only. Next Image uses unoptimized authenticated local routes. Photo editing validates actual parent/membership/Featured requirements; RLS remains the final public privacy boundary.
 9. Photo deletion rejects cover references, hides the row before touching bytes, aborts incomplete sessions, deletes/verifies all five keys and then removes the Photo. Partial failures retain a hidden retryable row. No silent archive cascades or Lightroom changes.
 
-Keep all objects private. Milestone 4 must add effective-public-visibility checks to a separate derivative-only read route and verify unpublish/cache behavior. Raw GPS-bearing sources must not become public; no public signed GETs, CDN or shared caching exists now. Automated tests use fake R2 and real embedded PostgreSQL/Sharp. Hosted CORS, credentials, SDK transport and actual Vercel time/memory need the controlled ten-photo proof; no remote resources have been modified.
+Keep all objects private. Milestone 4 adds the separate effective-visibility derivative route described below. Raw GPS-bearing sources must not become public; no public signed GETs, CDN or shared caching exists now. Automated tests use fake R2 and real embedded PostgreSQL/Sharp. Hosted CORS, credentials, SDK transport and the controlled ten-photo proof were verified by the owner; no remote resources have been modified.
 
 Required server names: R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY. Optional R2_JURISDICTION supports restricted endpoints. Empty names are now in .env.example. No real credentials or public-prefixed R2 values are committed.
 
@@ -170,13 +175,14 @@ Required server names: R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, R2_SECRE
 | 0 — Complete | Review/planning | Bible unchanged; open decisions explicitly recorded |
 | 1 — Complete, owner-verified hosted | Shell, schema/constraints/RLS, single-admin login/shell, security tests/types/CI | Local checks and owner hosted verification complete |
 | 2 — Complete, owner-verified hosted | Country/City selection, Trip and Location CRUD, transactional joins, optional dates/status | Undated Trip/Location/memberships; safe deletion; Drafts private |
-| 3 — Implemented locally, hosted proof pending | Private R2 capabilities, derivatives/EXIF, Draft import/history, Travel edit/publication, secure admin previews/deletion | Controlled ~10 JPEGs; Personal zero-byte reads/uploads; orientation/GPS/aspect/unknown EXIF; retry/failure/deletion privacy |
-| 4 — First meaningful vertical slice | Review/publish + minimal public Trip | Create Trip → Location → associate → import ~10 JPEGs → assign → publish → public Trip. Nice/Record/Personal and anon/API/media/unpublish tests |
-| 5 — Hotel/Stay workflows | Repeat Stays, optional reviews/dates, Hotel photos, public aggregate/detail | Two Stays on one Hotel; no artificial Location or Hotel images in Trip galleries; privacy/correct counts |
-| 6 — Importer refinement | Existing-Location suggestions/grouping/batch exceptions | No invented context/entity/publication; uncertain assignments Draft; browser compatibility |
-| 7 — Photography/geographic discovery | Photos/detail/Location, editorial masonry, Featured/covers/responsive delivery | Record excluded from main Photos; native proportions; context navigation; privacy/cache invalidation |
-| 8 — Remaining V1 site | Indices/refinements, home/About, Map V1, responsive visual direction | Published pins/clustering; no Phase 2; approved branding/typography |
-| 9 — Release verification | Accessibility/security/performance/backup/recovery | No draft leaks via API/images/caches; deployed slice; verified backup/forward migration procedure |
+| 3 — Complete, owner-verified hosted | Private R2 capabilities, derivatives/EXIF, Draft import/history, Travel edit/publication, secure admin previews/deletion | Controlled ~10 JPEGs; Personal zero-byte reads/uploads; orientation/GPS/aspect/unknown EXIF; retry/failure/deletion privacy |
+| 4 — First public photography experience | Photography-led home, Nice gallery/explicit Record view, UUID detail, private-R2 public derivatives | Effective-public reads, private-field omission, parent withdrawal, responsive native aspect ratios; no public Trips yet |
+| 5 — Recommended: first public Trip slice | Minimal published Trip index/detail using existing City/Location/Photo joins and derivative delivery | Create Trip → Location → associate → import → assign → publish → public Trip; Nice photography and separate The Record, optional dates, hidden parents |
+| 6 — Hotel/Stay workflows | Repeat Stays, optional reviews/dates, Hotel photos, public aggregate/detail | Two Stays on one Hotel; no artificial Location or Hotel images in Trip galleries; privacy/correct counts |
+| 7 — Importer refinement | Existing-Location suggestions/grouping/batch exceptions | No invented context/entity/publication; uncertain assignments Draft; browser compatibility |
+| 8 — Geographic discovery/refinement | Location context, covers and responsive refinement | Record excluded by default; native proportions; context navigation; privacy/cache invalidation |
+| 9 — Remaining V1 site | Indices/refinements, home/About, Map V1, responsive visual direction | Published pins/clustering; no Phase 2; approved branding/typography |
+| 10 — Release verification | Accessibility/security/performance/backup/recovery | No draft leaks via API/images/caches; deployed slice; verified backup/forward migration procedure |
 
 Stop after the requested milestone. Meaningful tests focus on security/constraints/privacy/import recovery/end-to-end behavior, not trivial presentation snapshots. Synthetic fixtures never run on production. Do not reset existing remote data or deploy unreviewed migrations.
 
@@ -188,3 +194,19 @@ Stop after the requested milestone. Meaningful tests focus on security/constrain
 - [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
 - [Supabase security-invoker views](https://supabase.com/docs/guides/database/views), should views later be needed.
 - [R2 presigned URLs](https://developers.cloudflare.com/r2/api/s3/presigned-urls/), [public bucket exposure](https://developers.cloudflare.com/r2/buckets/public-buckets/) and [CORS](https://developers.cloudflare.com/r2/buckets/cors/).
+
+## 11. Milestone 4 public photography and delivery
+
+Homepage selects up to nine effectively visible Nice photos: Featured first, then other Nice photos, deduplicated. The first photograph leads, with a masonry selection when more exist. `/photos` defaults to Nice; the owner's Milestone 4 request makes Record available through an explicit `?view=record` selection, never mixed into the default gallery/home. Galleries use 24-item pages plus one lookahead, explicit editorial_order first, then capture time/created time/ID. Zero/one/few photos and absent editorial/EXIF values require no fabricated content.
+
+Public Server Components always use the cookie-free anonymous Supabase client. The new query projection deliberately omits GPS, internal notes, filenames, source keys/hash, import state and administrative publication state. Related Location/City/Country and Trip names use explicit anonymous projections. All supported Photo contexts retain existing RLS eligibility; current imported Travel photos receive geographical context. Hotel/Stay contextual presentation is deferred without weakening Hotel parent visibility. No public Trip links are emitted before those pages exist.
+
+`GET /photos/[id]/image/[variant]` permits only tiny/thumbnail/medium/large. It validates UUID/variant, performs an anonymous ID lookup under existing RLS, and only then reads the UUID derivative using the server-only S3 client. Hidden/nonexistent records and invalid/source variants return 404; infrastructure errors return a generic 503, never provider details. The original source is still confined to the independently authenticated admin route. The bucket remains private; no signed public GET capability, public hostname, Worker or Cloudflare change is required.
+
+Responses stream the existing metadata-free WebP unchanged. Native img srcSet advertises actual derivative **widths**, calculated from the native aspect ratio and no-upscale rule (portrait widths are smaller than long edges). All four derivatives are candidates; small duplicated widths are omitted. Gallery sizes follow 1/2/3-column breakpoints; opening/detail use larger viewport sizes. Visible opening photography is eager/high priority, later imagery lazy. CSS constrains viewport height without cropping/stretching. This avoids a second transform/recompression and does not load every large image. Next local image optimization is explicitly disallowed (`images.localPatterns: []`), so visitors cannot use `/_next/image` to create an independent shared cached copy.
+
+Public HTML/data and image routes use no-store; media also sets CDN/Vercel-CDN no-store. An unpublish/parent change is effective on the next server request, with no purge process. A request already authorized/in flight can finish, and bytes already downloaded or saved cannot be revoked. This favors withdrawal correctness over CDN efficiency: each image uses a Supabase visibility lookup and Vercel streams R2 bytes. Traffic/cost/latency may justify a later explicitly tested authorization-aware edge/cache design; do not simply enable public bucket access or a TTL that leaks unpublished images.
+
+Titles/descriptions/OG text use only public editorial/geographic fields. OG image URLs and canonical-domain configuration are deferred while branding/domain are undecided. Public UI uses local system sans/Georgia fonts, scoped light editorial styles, semantic navigation and visible focus. Unimplemented nav labels are disabled; mobile wraps in a readable two-row header without requiring JS. CSS columns produce a native-proportion masonry layout whose keyboard/reading order follows DOM column order. There is no search, taxonomy, client gallery state or animation.
+
+References checked for this implementation: [Next no-store fetch](https://nextjs.org/docs/app/api-reference/functions/fetch), [Next cache behavior](https://nextjs.org/docs/app/guides/caching-without-cache-components), [R2 S3 API](https://developers.cloudflare.com/r2/api/s3/api/).

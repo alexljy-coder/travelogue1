@@ -1,0 +1,54 @@
+.public-site { min-height: 100vh; background: #faf9f6; color: #292824; }
+.public-site a { text-decoration: none; }
+.public-site a:hover { text-decoration: underline; text-underline-offset: .25em; }
+.public-site .archive-header { max-width: 1440px; padding: 2rem 2.5rem; gap: 2rem; }
+.archive-name { font-family: Georgia, serif; font-size: 1.4rem; letter-spacing: -.025em; white-space: nowrap; }
+.archive-header nav { display: flex; flex-wrap: wrap; gap: 1.6rem; font-size: .7rem; letter-spacing: .12em; }
+.archive-header [aria-disabled=true] { color: #77736c; cursor: default; }
+.public-site .archive-main { max-width: 1440px; padding: 1rem 2.5rem 4rem; }
+.public-site h1, .public-site h2 { font-family: Georgia, serif; font-weight: 400; letter-spacing: -.03em; }
+.public-site h1 { font-size: clamp(2rem, 4vw, 3rem); margin: 0; }
+.public-site h2 { font-size: 1.65rem; margin: 0; }
+.archive-page-heading, .archive-section-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+.archive-section-heading { margin-top: 3rem; }
+.archive-section-heading > a, .archive-back, .archive-pagination { font-size: .85rem; }
+.archive-views { display: flex; gap: 1.5rem; font-size: .85rem; }
+.archive-views [aria-current=page] { border-bottom: 1px solid #85462f; padding-bottom: .3rem; }
+.archive-intro { color: #615d56; margin: -1rem 0 2rem; font-size: .9rem; }
+.archive-grid { columns: 3; column-gap: 1.2rem; }
+.archive-grid[data-count="1"] { columns: 1; max-width: 900px; }
+.archive-grid[data-count="2"] { columns: 2; }
+.archive-photo { margin: 0 0 1.4rem; break-inside: avoid; }
+.archive-photo > a { display: block; }
+.public-site img { display: block; width: 100%; height: auto; }
+.public-site figcaption { font-size: .8rem; line-height: 1.6; padding-top: .55rem; overflow-wrap: anywhere; }
+.public-site figcaption span { display: block; color: #615d56; font-size: .75rem; }
+.archive-opening { margin: 0; }
+.archive-opening img { max-height: 76vh; width: auto; max-width: 100%; margin: auto; }
+.archive-opening figcaption { display: flex; justify-content: space-between; gap: 1rem; }
+.archive-empty { min-height: 40vh; padding-top: 4rem !important; padding-bottom: 4rem !important; color: #615d56; }
+.archive-empty h1, .archive-empty h2 { color: #292824; }
+.archive-pagination { display: flex; gap: 2rem; margin-top: 2rem; }
+.archive-back { display: inline-block; margin-bottom: 1.5rem; }
+.archive-detail-image { margin: 0; }
+.archive-detail-image img { width: auto; max-width: 100%; max-height: 85vh; margin: auto; }
+.archive-detail-text { display: grid; grid-template-columns: 1.2fr 1fr; gap: 4rem; max-width: 1200px; margin: 2.5rem auto 0; }
+.public-site .archive-detail-text h1 { font-size: clamp(1.6rem, 3vw, 2.2rem); overflow-wrap: anywhere; }
+.archive-description { white-space: pre-line; line-height: 1.7; max-width: 38rem; overflow-wrap: anywhere; }
+.archive-metadata { margin: 0; font-size: .8rem; line-height: 1.7; }
+.archive-metadata > div { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 1rem; margin-bottom: .3rem; }
+.archive-metadata dt { color: #615d56; }
+.archive-metadata dd { margin: 0; overflow-wrap: anywhere; }
+.archive-footer { max-width: 1440px; margin: auto; padding: 1.5rem 2.5rem; color: #615d56; font-size: .7rem; border-top: 1px solid #e2dfd8; }
+.visually-hidden, .skip-link:not(:focus) { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.skip-link:focus { position: absolute; top: .5rem; left: 1rem; z-index: 1; background: #faf9f6; padding: .7rem; }
+@media (max-width: 1000px) { .archive-grid { columns: 2; }.archive-header nav { gap: 1rem; }.archive-detail-text { gap: 2rem; } }
+@media (max-width: 740px) {
+  .public-site .archive-header { align-items: flex-start; flex-direction: column; gap: 1.25rem; padding: 1.5rem 1rem; }
+  .archive-header nav { gap: 1.25rem; font-size: .65rem; letter-spacing: .06em; }
+  .public-site .archive-main { padding: 1rem 1rem 3rem; }
+  .archive-detail-text { grid-template-columns: 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+  .archive-footer { padding: 1.5rem 1rem; }
+  .archive-opening figcaption { flex-direction: column; gap: 0; }
+}
+@media (max-width: 600px) { .archive-grid, .archive-grid[data-count="2"] { columns: 1; }.archive-photo { margin-bottom: 1.5rem; } }

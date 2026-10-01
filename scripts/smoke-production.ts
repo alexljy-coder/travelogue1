@@ -74,8 +74,40 @@ async function unusedPort() {
     assert.equal((await fetch(`${base}/signup`)).status, 404);
     assert.equal((await fetch(`${base}/admin/register`)).status, 404);
     assert.equal((await fetch(`${base}/trips/example`)).status, 404);
-    assert.equal((await fetch(`${base}/photos`)).status, 404);
-    assert.equal((await fetch(`${base}/photos/70000000-0000-4000-8000-000000000001`)).status, 404);
+    for (const path of ['/photos', '/photos?view=record']) {
+      const response = await fetch(`${base}${path}`);
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get('cache-control') ?? '', /no-store/);
+      assert.equal(response.headers.get('set-cookie'), null);
+      const html = await response.text();
+      assert.match(html, /Photography selection/);
+      assert.doesNotMatch(html, /internal_notes|storage_key|file_hash|captured_at_offset_minutes|source\.jpg/);
+      const photoLink = html.match(/href="(\/photos\/[0-9a-f-]{36})"/);
+      if (photoLink) {
+        const detail = await fetch(`${base}${photoLink[1]}`);
+        assert.equal(detail.status, 200);
+        assert.match(detail.headers.get('cache-control') ?? '', /no-store/);
+        assert.doesNotMatch(await detail.text(), /internal_notes|storage_key|file_hash|source\.jpg/);
+        const image = await fetch(`${base}${photoLink[1]}/image/thumbnail`, { headers: { cookie: 'sb-test-auth-token=invalid' } });
+        assert.equal(image.status, 200);
+        assert.equal(image.headers.get('content-type'), 'image/webp');
+        assert.match(image.headers.get('cache-control') ?? '', /no-store/);
+        const bytes = new Uint8Array(await image.arrayBuffer());
+        assert.equal(new TextDecoder().decode(bytes.slice(8, 12)), 'WEBP');
+        const missing = await fetch(`${base}/photos/ffffffff-ffff-4fff-8fff-ffffffffffff`);
+        assert.equal(missing.status, 404);
+        const hiddenImage = await fetch(`${base}/photos/ffffffff-ffff-4fff-8fff-ffffffffffff/image/large`);
+        assert.equal(hiddenImage.status, 404);
+      }
+    }
+    assert.equal((await fetch(`${base}/photos/not-a-photo-id`)).status, 404);
+    for (const variant of ['source', 'source.jpg', 'unknown']) {
+      const response = await fetch(`${base}/photos/70000000-0000-4000-8000-000000000001/image/${variant}`);
+      assert.equal(response.status, 404);
+      assert.match(response.headers.get('cache-control') ?? '', /no-store/);
+    }
+    const optimizer = await fetch(`${base}/_next/image?url=%2Fphotos%2F70000000-0000-4000-8000-000000000001%2Fimage%2Flarge&w=640&q=75`);
+    assert.equal(optimizer.status, 400, 'Optimizer must not cache protected local images.');
     console.log(`Production smoke passed: ${configured ? 'configured/no-session' : 'missing configuration'}, private redirects, no registration routes.`);
   } finally {
     const exited = once(server, 'exit');

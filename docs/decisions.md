@@ -43,7 +43,7 @@ photos.import_batch_id, processing_status, captured_at_offset_minutes and editor
 
 ## D008 — Small milestones
 
-Foundation → Trip/Location workflow → private ten-photo import → publish/public Trip slice, then Hotel/Stay and editorial breadth. Suggested Bible milestones are subdivided without changing V1 scope. Stop at each requested milestone.
+Foundation → Trip/Location workflow → private ten-photo import → first public photography experience (owner-requested Milestone 4) → public Trip slice, then Hotel/Stay and editorial breadth. Suggested Bible milestones are subdivided without changing V1 scope. Stop at each requested milestone.
 
 ## D009 — Tooling and verification implementation
 
@@ -98,3 +98,19 @@ Travel edit actions verify database-derived Trip/Location membership even for a 
 ## D017 — Dependency and test boundaries
 
 Pinned AWS SDK 3.1130.0, Sharp 0.35.5 and exifr 7.1.3 implement the pipeline without a framework/ORM change. SDK release-age checks remain enabled; the September 10 SDK release is used rather than accepting newly published packages. Tests use real Sharp JPEG/WebP/EXIF processing, embedded PostgreSQL RPC/RLS/constraints and a fake object/multipart store. No production bucket access is required. Production smoke tests prove private route rejection and absence of public Photo pages; the actual Lightroom/CORS/R2/Vercel performance proof remains an explicit owner test.
+
+## D018 — First public photography scope and Record selection
+
+The owner's Milestone 4 request brings home/Photos/UUID detail forward before public Trip pages. Nice remains the default main Photos archive and the only homepage classification. Record is explicitly selectable at `/photos?view=record`, satisfying the requested support for both without changing the default. It is not mixed into the homepage or silently promoted. No tags/categories or new editorial model. Existing position/capture/created/UUID ordering is deterministic; bounded pagination avoids downloading the whole archive. Disabled Trips/Stays/Map/About nav labels retain the V1 navigation without broken links or premature placeholder experiences. System typography/native proportions/light scoped styles leave admin presentation separate.
+
+## D019 — Public derivative authorization, no shared cache
+
+Private R2 stays unchanged. A Node route at `/photos/[id]/image/[variant]` checks cookie-free anonymous Supabase RLS visibility before constructing the R2 read. Only four hard-coded metadata-free WebPs are accepted; source and arbitrary keys are rejected before DB/storage access. RLS already checks ready Published Photo plus required published parents, so no migration/new public grant is needed. Public HTML queries use a narrower typed projection, related name-only geography/Trip projections, no exact GPS, storage keys or notes. Being logged into admin never changes public visibility. No public signed source/derivative GET URLs.
+
+Stream existing bytes with no reprocessing. Native responsive srcSet uses actual width per aspect ratio, no-upscale duplicate elimination, larger opening/detail sizes and smaller lazy gallery representations. Local Next optimizer access is disabled globally because all current admin/public images are already generated/unoptimized; otherwise a guessed optimizer URL could retain an independently cached derivative after unpublication. Public HTML/data/media remain dynamic/no-store, including CDN-specific media headers. Request-local React deduplication does not create a shared content cache. Each new read observes publication changes; already authorized/in-flight/downloaded images cannot be recalled. Accepted tradeoff is per-image Supabase lookups and Vercel byte delivery, appropriate for this initial archive. Edge/CDN optimization requires explicit parent-aware withdrawal tests later.
+
+## D020 — Public metadata and deferred context
+
+Photo URLs remain UUIDs. Detail shows only real optional editorial/EXIF metadata, retaining the captured calendar date without inferring a timezone. Geography is derived from assigned Location/City/Country, never photo GPS. Trip title is text until public Trip pages exist. All public-visible Photo contexts can use the common image/detail shell under existing RLS, but Hotel/Stay context/UI is deferred. OG titles/descriptions are safe public text; canonical-domain and OG imagery are deferred rather than inventing branding/domain configuration. No new environment variables or R2/CORS settings are required.
+
+Milestone 3 hosted/local proof is complete per the owner's Milestone 4 instruction. No remote infrastructure was modified by the agent.
