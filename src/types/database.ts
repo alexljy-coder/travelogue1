@@ -171,6 +171,8 @@ export type Database = {
           error: string | null;
           created_at: string;
           updated_at: string;
+          context: string;
+          stay_id: string | null;
         };
         Insert: {
           id: string;
@@ -186,6 +188,8 @@ export type Database = {
           error?: string | null;
           created_at?: string;
           updated_at?: string;
+          context?: string;
+          stay_id?: string | null;
         };
         Update: {
           id?: string;
@@ -201,9 +205,12 @@ export type Database = {
           error?: string | null;
           created_at?: string;
           updated_at?: string;
+          context?: string;
+          stay_id?: string | null;
         };
         Relationships: [
           { foreignKeyName: "import_items_import_batch_id_fkey"; columns: ["import_batch_id"]; isOneToOne: false; referencedRelation: "import_batches"; referencedColumns: ["id"] },
+          { foreignKeyName: "import_items_stay_id_fkey"; columns: ["stay_id"]; isOneToOne: false; referencedRelation: "stays"; referencedColumns: ["id"] },
         ];
       };
       locations: {
@@ -527,8 +534,11 @@ export type Database = {
       admin_mark_photo_upload: { Args: { p_id: string | null; p_token: string | null; p_multipart_id: string | null; }; Returns: undefined };
       admin_remove_trip_city: { Args: { p_trip_id: string | null; p_city_id: string | null; }; Returns: undefined };
       admin_remove_trip_location: { Args: { p_trip_id: string | null; p_location_id: string | null; }; Returns: undefined };
+      admin_reserve_context_photo_import: { Args: { p_id: string | null; p_batch_id: string | null; p_filename: string | null; p_hash: string | null; p_size: number | null; p_classification: string | null; p_context: string | null; p_stay_id?: string | null; }; Returns: string };
       admin_reserve_photo_import: { Args: { p_id: string | null; p_batch_id: string | null; p_filename: string | null; p_hash: string | null; p_size: number | null; p_classification: string | null; }; Returns: string };
+      admin_save_hotel: { Args: { p_id: string | null; p_record: Json | null; }; Returns: string };
       admin_save_location: { Args: { p_id: string | null; p_city_id: string | null; p_name: string | null; p_slug: string | null; p_latitude?: number | null; p_longitude?: number | null; p_description?: string | null; p_status?: string | null; p_editorial_order?: number | null; p_trip_id?: string | null; }; Returns: string };
+      admin_save_stay: { Args: { p_id: string | null; p_record: Json | null; }; Returns: string };
       admin_set_trip_city: { Args: { p_trip_id: string | null; p_city_id: string | null; p_sequence?: number | null; }; Returns: undefined };
       admin_set_trip_location: { Args: { p_trip_id: string | null; p_location_id: string | null; p_sequence?: number | null; p_visited_at?: string | null; }; Returns: undefined };
       is_admin: { Args: Record<string, never>; Returns: boolean };

@@ -13,12 +13,12 @@ import { redirect } from 'next/navigation';
 
 export async function savePhoto(id: string, _previous: FormState, form: FormData): Promise<FormState> {
   const { client } = await requireAdmin();
-  const values = valuesFor(form, ['classification','status','featured','trip_id','location_id','caption','description','editorial_order']);
+  const values = valuesFor(form, ['context','stay_id','classification','status','featured','trip_id','location_id','caption','description','editorial_order']);
   if (!uuidSchema.safeParse(id).success) return { error: 'Invalid Photo identifier.', values };
   const result = photoEditSchema.safeParse(values);
   if (!result.success) return validationState(values, result.error.issues);
   const { data: photo, error: photoError } = await client.from('photos').select('*').eq('id', id).single();
-  if (photoError || !photo || photo.context !== 'travel' || photo.processing_status !== 'ready') return { error: 'Only a ready Travel photo can be edited. Check import or deletion status.', values };
+  if (photoError || !photo || photo.processing_status !== 'ready') return { error: 'Only a ready photo can be edited. Check import or deletion status.', values };
   const record = result.data;
   const parents: PhotoParents = {};
   if (record.trip_id) {
@@ -39,14 +39,21 @@ export async function savePhoto(id: string, _previous: FormState, form: FormData
     parents.tripLocationAssociated = !!data;
     if (!data) return { error: 'Add this Location to the selected Trip first, or leave the assignment incomplete as Draft.', values };
   }
-  const errors = photoPublicationErrors({ ...photo, ...record, context: 'travel', processing_status: 'ready', stay_id: null }, parents);
+  if(record.stay_id) {
+    const {data:stay,error} = await client.from('stays').select('id,status,trip_id,hotel_id').eq('id',record.stay_id).maybeSingle();
+    if(error || !stay) return {error:'Unable to verify the selected Stay.',values};
+    const [trip,hotel] = await Promise.all([client.from('trips').select('status').eq('id',stay.trip_id).single(),client.from('hotels').select('status').eq('id',stay.hotel_id).single()]);
+    if(trip.error || hotel.error) return {error:'Unable to verify Stay parents.',values};
+    parents.stay={id:stay.id,status:stay.status as PublicationStatus,trip_status:trip.data.status as PublicationStatus,hotel_status:hotel.data.status as PublicationStatus};
+  }
+  const errors = photoPublicationErrors({ ...photo, ...record, context: record.context, processing_status: 'ready' }, parents);
   if (errors.length) return { error: errors.join(' '), values };
-  const { error } = await client.from('photos').update(record).eq('id', id).eq('context','travel').eq('processing_status','ready').select('id').single();
+  const { error } = await client.from('photos').update(record).eq('id', id).eq('processing_status','ready').select('id').single();
   if (error) return { error: databaseError(error), values };
   revalidatePath('/admin/photos', 'layout');
   revalidatePath('/admin/trips', 'layout');
   revalidatePath('/admin/locations', 'layout');
-  return { message: 'Photo saved. Private image delivery remains administrator-only.', values };
+  return { message: 'Photo saved. Publication and relationships validated.', values };
 }
 
 export async function deletePhoto(id: string, _previous: FormState, form: FormData): Promise<FormState> {

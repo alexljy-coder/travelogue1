@@ -3,7 +3,7 @@ import { derivativeEdges, derivativeSize } from '@/lib/photos/model';
 import type { PhotoWithContext } from '@/lib/data/public-photos';
 import { publicVariants } from '@/lib/photos/public-image';
 export function photoLabel(photo: PhotoWithContext) {
-  return photo.caption || [photo.place.location, photo.place.city, photo.place.country].filter(Boolean).join(', ') || 'Photograph';
+  return photo.caption || [photo.place.location || photo.place.hotel, photo.place.city, photo.place.country].filter(Boolean).join(', ') || 'Photograph';
 }
 export function responsiveSources(photo: Pick<PhotoWithContext, 'id' | 'width' | 'height'>) {
   const seen = new Set<number>();

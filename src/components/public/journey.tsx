@@ -14,8 +14,10 @@ export function SectionPages({base,values,name,page,hasNext}:{base:string;values
   return page>1||hasNext ? <nav className="archive-pagination" aria-label={`${name === 'record' ? 'The Record' : name} pages`}>{page>1&&<Link href={href(page-1)} prefetch={false}>Previous page</Link>}{hasNext&&<Link href={href(page+1)} prefetch={false}>Next page</Link>}</nav>:null;
 }
 export function PhotoContextLinks({photo}:{photo:PhotoWithContext}) {
-  return <nav className="journey-context-links" aria-label="Photo travel context">
+  return <nav className="journey-context-links" aria-label="Photo archive context">
     {photo.place.trip_slug&&<Link href={`/trips/${photo.place.trip_slug}`} prefetch={false}>{photo.place.trip}</Link>}
+    {photo.place.hotel_slug&&<Link href={`/stays/${photo.place.hotel_slug}`} prefetch={false}>{photo.place.hotel}</Link>}
+    {photo.place.hotel_slug&&photo.place.stay_id&&<Link href={`/stays/${photo.place.hotel_slug}/${photo.place.stay_id}`} prefetch={false}>This Stay</Link>}
     {photo.place.location_slug&&<Link href={`/locations/${photo.place.location_slug}`} prefetch={false}>{photo.place.location}</Link>}
   </nav>;
 }

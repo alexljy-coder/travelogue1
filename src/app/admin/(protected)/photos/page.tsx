@@ -6,7 +6,7 @@ import { listPage } from '@/lib/admin/display';
 export default async function PhotosPage({ searchParams }: { searchParams: Promise<{ page?: string; deleted?: string }> }) {
   const { client } = await requireAdmin();
   const query = await searchParams; const page = listPage(query.page);
-  const { data, count, error } = await client.from('photos').select('id,filename,width,height,caption,classification,status,processing_status,featured').eq('context','travel').order('created_at',{ ascending: false }).order('id').range((page-1)*25,page*25-1);
+  const { data, count, error } = await client.from('photos').select('id,filename,width,height,caption,context,classification,status,processing_status,featured').order('created_at',{ ascending: false }).order('id').range((page-1)*25,page*25-1);
   if (error || !data) throw new Error('Unable to load Photos.');
   return <main><div className="page-heading"><h1>Photos</h1><Link href="/admin/photos/import">Import Lightroom JPEGs</Link></div>
     {query.deleted === '1' && <p role="status" className="success">Photo and its five R2 objects deleted.</p>}

@@ -21,7 +21,7 @@ beforeEach(async () => {
 function repo(): ImportRepository {
   const rpc = async (name: string, args: unknown[]) => (await db.query<{ result: unknown }>(`select public.${name}(${args.map((_,index)=>`$${index+1}`).join(',')}) as result`, args)).rows[0];
   return {
-    async reserve(input) { return (await rpc('admin_reserve_photo_import',[input.id,input.batch_id,input.filename,input.file_hash,input.file_size,input.classification])).result as string; },
+    async reserve(input) { return (await rpc('admin_reserve_context_photo_import',[input.id,input.batch_id,input.filename,input.file_hash,input.file_size,input.classification,input.context??'travel',input.stay_id??null])).result as string; },
     async item(id) { const item = (await db.query<ImportItem>('select * from public.import_items where id=$1',[id])).rows[0]; if (!item) throw new Error('Item not found.'); return item; },
     async photo(id) { return (await db.query<Photo>('select * from public.photos where id=$1',[id])).rows[0] ?? null; },
     async claim(id,token,phase) { await rpc('admin_claim_photo_import',[id,token,phase]); },
@@ -187,4 +187,16 @@ test('batch cap, request identity, metadata constraints and Record classificatio
   const second={ ...data,id:randomUUID(),file_hash:createHash('sha256').update('another-source').digest('hex') }; await assert.rejects(repository.reserve(second),/file limit/);
   await assert.rejects(db.query("update public.photos set status='published' where id=$1",[data.id]));
   await assert.rejects(db.query("update public.photos set featured=true where id=$1",[data.id]));
+}));
+
+test('Hotel context uses the same five-object ingestion, failure compensation and recoverable deletion',async()=>owner(async()=>{
+  const stayId='60000000-0000-4000-8000-000000000001';const data={...await input(),context:'hotel' as const,stay_id:stayId};
+  const storage=new FakeR2();const repository=repo();const service=createIngestion(repository,storage);
+  storage.failPutAt=2;let prepared=await service.prepare(data);if(prepared.existing)throw new Error('Unexpected duplicate');
+  await assert.rejects(service.process(prepared.id,prepared.token),/Storage was cleaned/);assert.equal(storage.objects.size,0);assert.equal((await repository.item(data.id)).stay_id,null);
+  storage.failPutAt=0;prepared=await service.prepare(data);if(prepared.existing)throw new Error('Unexpected duplicate');await service.process(prepared.id,prepared.token);
+  const photo=await repository.photo(prepared.id);assert.equal(photo?.context,'hotel');assert.equal(photo?.stay_id,stayId);assert.equal(photo?.location_id,null);assert.equal(photo?.trip_id,null);assert.equal(storage.objects.size,5);assert.deepEqual(storage.objects.get(objectKey(prepared.id,'source')),source);
+  await assert.rejects(service.prepare({...data,context:'travel',stay_id:null}),/another context or Stay/);
+  storage.failCleanup=true;await assert.rejects(service.delete(prepared.id),/hidden/);assert.equal((await repository.photo(prepared.id))?.processing_status,'failed');
+  storage.failCleanup=false;await service.delete(prepared.id);assert.equal(storage.objects.size,0);assert.equal(await repository.photo(prepared.id),null);assert.equal((await repository.item(prepared.id)).stay_id,null);
 }));

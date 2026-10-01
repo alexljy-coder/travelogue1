@@ -11,13 +11,16 @@ export function createAnonymousClient(db: PGlite, requests: string[] = []) {
       const url = new URL(String(input));
       assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer anonymous-fixture-key');
       const table = url.pathname.split('/').at(-1)!;
-      assert.ok(['photos','locations','trips','cities','countries','trip_cities','trip_locations'].includes(table));
-      const select = url.searchParams.get('select')!;
+      assert.ok(['photos','locations','trips','cities','countries','trip_cities','trip_locations','hotels','stays'].includes(table));
+      const rawSelect = url.searchParams.get('select')!;
+      const hotelJoin=rawSelect.endsWith(',stays!inner(hotel_id)');
+      const select=hotelJoin?rawSelect.replace(',stays!inner(hotel_id)',''):rawSelect;
       assert.ok(/^[a-z_,]+$/.test(select));
       requests.push(`${table}:${select}`);
       const values: string[] = []; const conditions: string[] = [];
       for (const [key, value] of url.searchParams) {
         if (['select','order','limit','offset'].includes(key)) continue;
+        if(hotelJoin&&key==='stays.hotel_id'){values.push(value.slice(3));conditions.push(`exists(select 1 from public.stays s where s.id=public.photos.stay_id and s.hotel_id=$${values.length})`);continue;}
         assert.ok(/^[a-z_]+$/.test(key));
         if (value.startsWith('eq.')) { values.push(value.slice(3)); conditions.push(`${key}=$${values.length}`); }
         else if (value.startsWith('neq.')) { values.push(value.slice(4)); conditions.push(`${key}<>$${values.length}`); }

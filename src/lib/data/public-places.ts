@@ -21,7 +21,7 @@ function checked<T>(result: { data: T | null; error: unknown }): T {
   if (result.error || result.data === null) throw new Error('Public archive unavailable.');
   return result.data;
 }
-async function geography(client: Client, cityIds: string[]): Promise<Geography[]> {
+export async function geography(client: Client, cityIds: string[]): Promise<Geography[]> {
   const cities: {id:string;name:string;country_id:string}[] = [];
   const countries: {id:string;name:string}[] = [];
   const ids = [...new Set(cityIds)];

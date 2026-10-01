@@ -100,3 +100,14 @@ test('public dependency failures fail closed and never return provider secrets',
   const missing = await deliverPublicImage(id(1), 'large', { visible: async () => true, media: async () => { throw new Error('NoSuchKey'); }, missing: () => true });
   assert.equal(missing.status, 404);
 });
+
+test('Hotel derivative delivery requires the actual public Stay, Hotel and Trip on every read',async()=>{
+  const client=createAnonymousClient(db);let reads=0;
+  const dependencies={visible:async(photoId:string)=>{const result=await client.from('photos').select('id').eq('id',photoId).maybeSingle();if(result.error)throw result.error;return !!result.data;},media:async()=>{reads++;return{body:new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode('HOTEL WEBP'));controller.close();}}),contentType:'image/webp'};},missing:()=>false};
+  assert.equal((await deliverPublicImage(id(3),'large',dependencies)).status,200);
+  for(const [table,parent]of [['stays','60000000-0000-4000-8000-000000000001'],['hotels','50000000-0000-4000-8000-000000000001'],['trips','30000000-0000-4000-8000-000000000001']]){
+    await db.query(`update public.${table} set status='draft' where id=$1`,[parent]);assert.equal((await deliverPublicImage(id(3),'large',dependencies)).status,404);assert.equal(reads,1);
+    await db.query(`update public.${table} set status='published' where id=$1`,[parent]);
+  }
+  assert.equal((await deliverPublicImage(id(3),'source',dependencies)).status,404);assert.equal(reads,1);
+});

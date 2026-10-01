@@ -22,6 +22,9 @@ export function validationState(values: FormValues, issues: readonly { path: Pro
 }
 
 const workflowMessages = new Set([
+  'Select an existing City.', 'Select an existing Hotel.', 'Select an existing Trip.', 'Select an existing Stay.',
+  'This Hotel no longer exists.', 'This Stay no longer exists.', 'A published Trip and Hotel are required.',
+  'This Hotel already exists in this City. Select the existing Hotel.',
   'Select an existing Country.',
   'This Country code already exists. Select the existing Country.',
   'This Country name already exists. Select the existing Country.',

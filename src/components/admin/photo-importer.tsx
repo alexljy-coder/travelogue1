@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState, type InputHTMLAttributes } from 'react';
 import { useRouter } from 'next/navigation';
+import type { StayOption } from '@/lib/admin/catalog';
 import { scanFiles, type Classification } from '@/lib/photos/model';
 
 type Entry = { id: string; file: File; path: string; classification: Classification; status: string; photoId?: string; error?: string };
@@ -13,7 +14,8 @@ async function api(operation: string, body: unknown) {
   if (!response.ok) throw new Error(result.error ?? 'Import request failed. Refresh its status before retrying.');
   return result;
 }
-export function PhotoImporter() {
+export function PhotoImporter({stays,stayId}:{stays:StayOption[];stayId?:string}) {
+  const [context,setContext]=useState(stayId?'hotel':'travel');const [selectedStay,setSelectedStay]=useState(stayId??'');
   const [files, setFiles] = useState<File[]>([]); const [entries, setEntries] = useState<Entry[]>([]);
   const [fallback, setFallback] = useState<Classification | ''>(''); const [confirmed, setConfirmed] = useState(false);
   const [errors, setErrors] = useState<string[]>([]); const [skipped, setSkipped] = useState(0);
@@ -38,7 +40,7 @@ export function PhotoImporter() {
           // scanFiles excluded Personal BEFORE any arrayBuffer/hash/read or network upload.
           const bytes = await entry.file.arrayBuffer();
           const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map((value) => value.toString(16).padStart(2, '0')).join('');
-          const prepared = await api('prepare', { id: entry.id, batch_id: batchId, filename: entry.file.name, path: entry.path, classification: entry.classification, file_hash: hash, file_size: entry.file.size });
+          const prepared = await api('prepare', { id: entry.id, batch_id: batchId, filename: entry.file.name, path: entry.path, classification: entry.classification, file_hash: hash, file_size: entry.file.size, context, stay_id: context==='hotel'?selectedStay||null:null });
           update({ photoId: prepared.id });
           if (prepared.existing) { update({ status: 'Already imported' }); continue; }
           update({ status: 'Uploading private source…' });
@@ -64,6 +66,8 @@ export function PhotoImporter() {
   return <section className="editor">
     <p>Import at most 10 Lightroom-exported sRGB JPEGs, up to 4000px long edge and 25 MiB each. Sources remain private; every new Photo is Draft.</p>
     <p>Choose the export root folder to retain <strong>01 Nice / 02 Record Shots / 03 Personal</strong> paths. Personal is skipped before file contents are read. Dropping loose files uses your explicit choice below.</p>
+    <div className="field"><label htmlFor="import-context">Photo context</label><select id="import-context" disabled={busy||entries.some(e=>e.photoId||e.status!=='Ready')} value={context} onChange={e=>setContext(e.target.value)}><option value="travel">Travel</option><option value="hotel">Hotel</option></select></div>
+    {context==='hotel'&&<div className="field"><label htmlFor="import-stay">Stay (optional while Draft)</label><select id="import-stay" disabled={busy||entries.some(e=>e.photoId||e.status!=='Ready')} value={selectedStay} onChange={e=>setSelectedStay(e.target.value)}><option value="">Assign after import</option>{stays.map(s=><option key={s.id} value={s.id}>{s.hotel_name} · {s.check_in??'Undated'} · {s.trip_title}</option>)}</select></div>}
     <div className="field"><label htmlFor="import-fallback">Classification for files without a recognized folder</label><select id="import-fallback" value={fallback} disabled={busy} onChange={(event) => { const choice = event.target.value as Classification | ''; setFallback(choice); selectFiles(files, choice); }}><option value="">Choose explicitly</option><option value="nice">Nice</option><option value="record">Record</option></select></div>
     <div className="field"><label htmlFor="import-files">Select JPEG files</label><input id="import-files" type="file" accept="image/jpeg,.jpg,.jpeg" multiple disabled={busy} onChange={(event) => selectFiles(Array.from(event.target.files ?? []))} /></div>
     <div className="field"><label htmlFor="import-folder">Select export folder (supported browsers)</label><input id="import-folder" type="file" multiple disabled={busy} {...({ webkitdirectory: '', directory: '' } as InputHTMLAttributes<HTMLInputElement>)} onChange={(event) => selectFiles(Array.from(event.target.files ?? []))} /></div>

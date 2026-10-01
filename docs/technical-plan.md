@@ -1,25 +1,25 @@
 # V1 technical plan
 
-Milestones 1–2 implement the foundation and Trip/Location workflow; hosted verification is complete per the owner's instructions. Milestone 3 private photo ingestion has been manually verified locally and on Vercel against hosted Supabase/R2, as confirmed by the owner. Milestone 4 public photography is deployed and manually accepted on Vercel per the owner. Milestone 5 adds public Trips and Places. Product authority: [buildbible.md](./buildbible.md), read in full; it is unchanged. Owner resolutions and implementation decisions: [decisions.md](./decisions.md).
+Milestones 1–2 implement the foundation and Trip/Location workflow; hosted verification is complete per the owner's instructions. Milestone 3 private photo ingestion has been manually verified locally and on Vercel against hosted Supabase/R2, as confirmed by the owner. Milestone 4 public photography is deployed and manually accepted on Vercel per the owner. Milestone 5 public Trips and Places is deployed and accepted per the owner. Milestone 6 adds the Hotel/Stay branch end-to-end. Product authority: [buildbible.md](./buildbible.md), read in full; it is unchanged. Owner resolutions and implementation decisions: [decisions.md](./decisions.md).
 
 ## 1. Repository and infrastructure
 
 Initially this repository contained only the Build Bible and Git metadata. Milestone 1 adds a TypeScript Next.js App Router application, a versioned SQL migration, generated database types, security tests and setup documentation. Git checks now use the available bundled Git runtime; no tracked changes to the Build Bible were made.
 
-GitHub/Vercel/Supabase/R2 resources and Milestones 1–4 hosted verification/acceptance are owner-reported. The agent has not modified remote infrastructure. Inspect existing Supabase migration history before applying any new migration. [supabase-setup.md](./supabase-setup.md) describes the foundation; [r2-setup.md](./r2-setup.md) describes Milestone 3 credentials/CORS/migration/manual testing. R2 credentials first become necessary in Milestone 3.
+GitHub/Vercel/Supabase/R2 resources and Milestones 1–5 hosted verification/acceptance are owner-reported. The agent has not modified remote infrastructure. Inspect existing Supabase migration history before applying any new migration. [supabase-setup.md](./supabase-setup.md) describes the foundation; [r2-setup.md](./r2-setup.md) describes Milestone 3 credentials/CORS/migration/manual testing. R2 credentials first become necessary in Milestone 3.
 
 ## 2. Review and resolved decisions
 
 No fundamental stack/product conflict was found. Resolutions:
 
-- Photo URLs are `/photos/[id]`; no Photo slug column. Hotel aggregate uses `/stays/[hotelSlug]`, individual visit `/stays/[hotelSlug]/[stayId]`. Those pages are deferred.
+- Photo URLs are `/photos/[id]`; no Photo slug column. Hotel aggregate uses `/stays/[hotelSlug]`, individual visit `/stays/[hotelSlug]/[stayId]`. Those pages are implemented in Milestone 6.
 - Required unpublished parents hide stored Published children through RLS; no cascades of publication flags. Future publish actions use database-derived parent snapshots for preflight.
 - Featured requires Published + Nice. Trip covers additionally require Travel and that Trip; Hotel/Stay cover photography requires Hotel context and the matching Hotel/Stay. Location covers use matching Travel photos. Foreign keys prevent dangling covers; application selection/preflight enforces editorial eligibility and public queries must resolve effective visibility.
 - Optional editorial_order exists on Photos/Trips/Locations/Hotels/Stays; join sequence remains optional. Future public ordering: explicit value first, then captured_at DESC NULLS LAST for photos, then created_at DESC/id for deterministic ties. Admin numeric ordering inputs exist; drag-and-drop is deferred.
 - Stay purpose is Business/Leisure/Family/Mixed, optional; Trip also permits Photography.
 - stays.internal_notes is private and separate from public review_text. Photo GPS is preserved but excluded from public column grants and all public projections. Public geographic positions come from Locations/Hotels.
 - Countries/Cities retain no artificial publication states; only geography reachable from published content is anonymous-readable.
-- Trip-City membership remains explicit. Future Location/Stay association workflows must add corresponding trip_cities transactionally, without inventing sequence.
+- Trip-City membership remains explicit. Location/Stay association workflows add corresponding trip_cities transactionally, without inventing sequence.
 - Dates and EXIF remain optional. No date-containment enforcement, invented timezone, inferred city radius, invented destination, AI captions, Story or Review entity.
 
 Remaining implementation risks, not reasons to alter the product: browser folder traversal/classification fallback; Vercel resources for one-photo derivative processing; map library/tile-provider choice; cache withdrawal semantics. Verify them at their milestones.
@@ -37,6 +37,8 @@ Public database clients never inherit administrator cookies and fetch no-store. 
 Public pages and derivative routes remain dynamic/no-store in Milestone 4. Each image request checks anonymous effective visibility; no shared HTML/image cache can outlive unpublication. React cache only deduplicates detail metadata/page reads within a request. Shared caching needs a separately verified parent-aware invalidation design; it is not necessary for this small first experience. Never cache authenticated data or draft previews.
 
 ## 4. Implemented schema specification
+
+Milestone 6 adds [20261001000200_hotels_stays_workflow.sql](../supabase/migrations/20261001000200_hotels_stays_workflow.sql), locally verified and not applied remotely. It includes a PostgREST schema reload notification.
 
 The foundation is [20260930000100_v1_foundation.sql](../supabase/migrations/20260930000100_v1_foundation.sql), followed by [Milestone 2 transactions](../supabase/migrations/20260930000200_admin_geography_workflow.sql). Both are applied/verified per the owner. [20261001000100_private_photo_ingestion.sql](../supabase/migrations/20261001000100_private_photo_ingestion.sql) has been applied and verified per the owner. Applied migrations are unchanged.
 
@@ -75,7 +77,7 @@ Generated src/types/database.ts comes from the freshly migrated PostgreSQL catal
 
 ## 5. Publishing enforcement
 
-Database constraints guarantee valid row shapes, assignment requirements, Trip–Location membership, enums, ranges and readiness. Milestone 3's Travel Photo edit action runs publication preflight using database-derived parent/membership snapshots. Published Trip + Location and ready source/derivatives are required; Featured also requires Nice. Trip/Location status controls already exist. Cover and Hotel/Stay publication workflows remain deferred, with tested helpers. No parent status is trusted from browser input.
+Database constraints guarantee valid row shapes, assignment requirements, Trip–Location membership, enums, ranges and readiness. Milestone 3's Travel Photo edit action runs publication preflight using database-derived parent/membership snapshots. Published Trip + Location and ready source/derivatives are required; Featured also requires Nice. Trip/Location status controls already exist. Hotel/Stay and both Photo contexts now have publication workflows; explicit cover selection remains deferred. No parent status is trusted from browser input.
 
 RLS independently prevents publication races or direct API writes from exposing children below Draft required parents. Unpublishing a Trip hides its Travel photos and Stays/Hotel photos. Unpublishing a Hotel or Stay hides the corresponding Hotel photos. Unpublishing a Location hides its Travel photos. Stored child flags remain unchanged. A stale cover pointer never grants Photo visibility: public resolution must query through anonymous RLS.
 
@@ -148,7 +150,7 @@ tests/, scripts/, docs/
 .github/workflows/checks.yml
 ```
 
-Photos and UUID detail are implemented. Trips/[slug] and Locations/[slug] now use their established database slugs. Stays/[hotelSlug]/[stayId], Map and About remain unimplemented; their navigation labels are intentionally disabled without broken links or invented content. Hotel/Stay admin sections remain deferred. Image processing/media routes use Node.js/Sharp, not Edge runtime, within this application. Choose a map library/tile provider at its milestone. Branding/domain remain replaceable configuration.
+Photos and UUID detail are implemented. Trips/[slug] and Locations/[slug] now use their established database slugs. Stays/[hotelSlug]/[stayId] and Hotel/Stay admin sections are implemented in Milestone 6. Map and About remain disabled without broken links or invented content. Image processing/media routes use Node.js/Sharp, not Edge runtime, within this application. Choose a map library/tile provider at its milestone. Branding/domain remain replaceable configuration.
 
 ## 8. Milestone 3 private importer/R2 architecture
 
@@ -159,7 +161,7 @@ All remote bucket/token/CORS/migration changes are manual. See [r2-setup.md](./r
 3. Server creates a **single-part multipart upload** and signs part 1 for two minutes, including its length. The browser PUTs bytes directly to R2; only the server uses the SDK/reusable credentials and can complete/abort the upload. This avoids Vercel's 4.5 MB request limit. Unlike a reusable source PUT, an aborted/completed multipart session cannot be recreated by an old part URL. Exact-origin PUT CORS is required; no public bucket is needed.
 4. Server claims completion, lists/checks part count/size, completes the source, downloads at most 25 MiB, verifies SHA-256 and validates actual JPEG dimensions/format. Source bytes are retained untouched. Sharp normalizes orientation in derivatives; exifr reads optional EXIF with no invented timezone/coordinates.
 5. One Node request generates sequential, non-upscaled WebP long edges 2400/1600/600/300. Quality 85/82/80/75, effort 4. Strip metadata (especially GPS) and preserve aspect ratio. Use `<photo-id>/source.jpg`, large.webp, medium.webp, thumbnail.webp, tiny.webp; store `<photo-id>/` as one prefix. These exact UUID keys follow the owner's current milestone instructions rather than the earlier example prefix.
-6. Only after all objects exist does the finalization RPC create a ready Draft Travel Photo and update batch counters atomically. Trip/Location are assigned in protected edit UI afterward. No Hotel UI, invented entity, auto-publication or importer suggestions are added.
+6. Only after all objects exist does finalization create a ready Draft Photo and update batch counters atomically. Milestone 6 extends the reservation with explicit Travel/Hotel context and optional Hotel Stay; assignments can be edited afterward. No auto-publication or importer intelligence is added.
 7. Known failures abort incomplete sessions and delete/verify known objects. Durable import_items retain failed/cleanup_required state. Uncertain commit responses are checked before destructive compensation; uncertain reads remain recoverable. Per-file leases prevent concurrent work. An interrupted process can be cleaned after its lease expires, without introducing a queue/sweeper. Successful deletions preserve import history.
 8. Admin media routes validate Auth + singleton identity separately and stream only ready Photos with private/no-store. Raw sources may contain GPS and remain administrator-only. Next Image uses unoptimized authenticated local routes. Photo editing validates actual parent/membership/Featured requirements; RLS remains the final public privacy boundary.
 9. Photo deletion rejects cover references, hides the row before touching bytes, aborts incomplete sessions, deletes/verifies all five keys and then removes the Photo. Partial failures retain a hidden retryable row. No silent archive cascades or Lightroom changes.
@@ -178,10 +180,10 @@ Required server names: R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, R2_SECRE
 | 3 — Complete, owner-verified hosted | Private R2 capabilities, derivatives/EXIF, Draft import/history, Travel edit/publication, secure admin previews/deletion | Controlled ~10 JPEGs; Personal zero-byte reads/uploads; orientation/GPS/aspect/unknown EXIF; retry/failure/deletion privacy |
 | 4 — First public photography experience | Photography-led home, Nice gallery/explicit Record view, UUID detail, private-R2 public derivatives | Effective-public reads, private-field omission, parent withdrawal, responsive native aspect ratios; no public Trips yet |
 | 5 — Public Trips and Places | Published Trip index/slug detail, Location slug detail, Photo context links, safe covers and bounded contextual galleries | Optional dates, correct geography/joins, Nice and separate The Record; hidden parents/Drafts/private fields excluded |
-| 6 — Recommended: private Hotel/Stay workflow | Hotel/Stay admin CRUD, repeated visits, optional dates/review, Hotel-context assignment | Two Stays on one Hotel, each belonging to a Trip; no artificial Location; publication/notes/GPS privacy |
-| 7 — Importer refinement | Existing-Location suggestions/grouping/batch exceptions | No invented context/entity/publication; uncertain assignments Draft; browser compatibility |
-| 8 — Geographic discovery/refinement | Location context, covers and responsive refinement | Record excluded by default; native proportions; context navigation; privacy/cache invalidation |
-| 9 — Remaining V1 site | Indices/refinements, home/About, Map V1, responsive visual direction | Published pins/clustering; no Phase 2; approved branding/typography |
+| 6 — Hotels and Stays | Hotel/Stay admin CRUD, Hotel photo ingestion/assignment and public property/visit pages | Repeated visits, optional dates/reviews, ratings, private notes, Hotel-only photography, public parent withdrawal |
+| 7 — Recommended next | Map V1 with curated Location/Hotel pins and basic previews | Explicit tile-provider decision, published-only geography, no exact photo GPS or Trip routes |
+| 8 — Editorial completion | About and restrained homepage/context refinements | Real owner editorial content; no fake data; existing public visibility/visual language |
+| 9 — V1 refinement | Responsive/accessibility/performance pass and existing archive workflow refinements | Native proportions; privacy/cache withdrawal; no Phase 2 scope |
 | 10 — Release verification | Accessibility/security/performance/backup/recovery | No draft leaks via API/images/caches; deployed slice; verified backup/forward migration procedure |
 
 Stop after the requested milestone. Meaningful tests focus on security/constraints/privacy/import recovery/end-to-end behavior, not trivial presentation snapshots. Synthetic fixtures never run on production. Do not reset existing remote data or deploy unreviewed migrations.
@@ -226,3 +228,19 @@ Performance bounds: twelve Trips per index page plus one lookahead; only one eli
 All photographs reuse Milestone 4 native-aspect components, responsive metadata-free WebP delivery, lazy loading and derivative-only visibility checks. Public HTML/data/media remain dynamic/no-store and local Next optimization remains blocked. No migration, dependency, environment/CORS or remote R2 change. Offset pages may shift during concurrent editorial changes; no snapshot/cursor/infinite-scroll system is warranted yet.
 
 Photo detail obtains public Trip/Location slugs with its existing anonymous context query and offers links only when the parent resolves publicly. Trip Places → Location; Location → visible Trips; opening/contextual photos → the canonical UUID Photo route. Back-to-Photos remains classification-aware. Location and Trip 404 views use appropriate nouns. No invented Country/City routes, public Stay routes, Map/Search or fake navigation targets.
+
+## 13. Milestone 6 Hotel/Stay branch
+
+The owner expanded Milestone 6 to include both admin and public lodging. The core schema already supports it; no new editorial entity/table is necessary. Hotel is persistent property identity; Stay is a visit belonging to Hotel and Trip. `/stays` lists Hotels once; `/stays/[hotelSlug]` combines property editorial data, eligible cover, Nice photographs across visits and paged Stays. `/stays/[hotelSlug]/[stayId]` verifies membership and shows real dates or “Dates not recorded”, Trip, room/purpose/rating/review and separate Nice/Record photography. Hotels remain independent of Locations. Published Hotel without a public Stay is valid and uses an intentional sparse presentation.
+
+Bible recommendations remain the three existing Hotel booleans (Family, Business, Personal / Leisure); displayed in visit context without copying them to Stay. Hotel general rating and each Stay rating remain independent whole stars 1–5. `review_text` is public plain editorial text; `internal_notes` is private. Missing dates/review/EXIF/photos require no invented fields or placeholder imagery.
+
+`20261001000200_hotels_stays_workflow.sql` adds three invoker/admin-only functions, two private import-ledger columns/context constraint/index, and replaces finalization/failure/deletion functions to handle those columns. Save Hotel/Stay transactions keep Trip–City membership consistent, protect geography from duplicate records, and validate parent publication. Existing three migrations, public grants/RLS and content table model remain unchanged. Apply only the new migration manually before using these writes/imports. There are no environment/dependency/R2/CORS changes.
+
+Admin reuses the existing session client, independently guarded Server Actions, inline City/Country selector, preserved validation input, optional numeric order and confirmation/dependency-based deletion. Stay/Hotel removal never cascades photos or R2 bytes. Trip has an Add Stay entry and bounded Stay list. Source/derivative deletion stays in the shared Photo workflow.
+
+The importer chooses Travel/Hotel explicitly and can target a Stay; `import_items` keeps that choice across retries. New Photo stays Draft even when assigned to a published Stay. Draft Hotel photos may lack a Stay. Published Hotel photos require Stay only; Trip/geography derive through it. Hotel assignments have null direct Trip/Location. Source checksum duplicates preserve the existing Photo and reject conflicting requested context/Stay. Same five UUID objects, unchanged JPEG, stripped GPS in WebPs, same dimensions/quality/failure recovery and private bucket.
+
+`public-stays.ts` exposes narrow anonymous Hotel/Stay selectors and indexed Photo→Stay inner joins. Anonymous RLS enforces Hotel + Trip + Stay before any Hotel photo is returned. No notes/photo GPS/source keys enter public payloads. A Hotel slug and wrong Stay UUID never resolves a different property's visit. Hotel/Stay covers deterministically choose visible Nice Hotel photography for that exact parent; no stored cover additions or admin selection. Trip galleries still select Travel only; Where I Stayed links visits separately. Hotel/Stay/Trip links are attached to Hotel Photo detail via anonymous context reads.
+
+Twelve Hotels plus lookahead per index, batched geography/cover context and at most three cover reads concurrently. Hotel Nice gallery, Stay Nice/Record galleries, Hotel Stay list and Trip Stay list use 24 + lookahead; exclude hero before paging. Hotel gallery/cover filtering uses the existing Stay FK under PostgREST inner joins, not unbounded UUID lists. Queries/images stay dynamic/no-store; derivative delivery is unchanged and sources stay private. Responsive public headings explicitly avoid the admin's global flex-header styling. Offset movement, uncached delivery cost and absent admin cover selector remain known tradeoffs.

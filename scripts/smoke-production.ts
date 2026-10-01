@@ -44,7 +44,7 @@ async function unusedPort() {
     assert.ok(destination === '/admin/login?issue=unauthenticated' || destination === '/admin/login?issue=config');
     const configured = destination === '/admin/login?issue=unauthenticated';
     assert.match(admin.headers.get('cache-control') ?? '', /no-store/);
-    for (const path of ['/admin/trips', '/admin/trips/new', '/admin/trips/30000000-0000-4000-8000-000000000001', '/admin/locations', '/admin/locations/new', '/admin/locations/40000000-0000-4000-8000-000000000001', '/admin/photos', '/admin/photos/import', '/admin/photos/70000000-0000-4000-8000-000000000001']) {
+    for (const path of ['/admin/hotels', '/admin/hotels/new', '/admin/hotels/50000000-0000-4000-8000-000000000001', '/admin/stays', '/admin/stays/new', '/admin/stays/60000000-0000-4000-8000-000000000001', '/admin/trips', '/admin/trips/new', '/admin/trips/30000000-0000-4000-8000-000000000001', '/admin/locations', '/admin/locations/new', '/admin/locations/40000000-0000-4000-8000-000000000001', '/admin/photos', '/admin/photos/import', '/admin/photos/70000000-0000-4000-8000-000000000001']) {
       const response = await fetch(`${base}${path}`, { redirect: 'manual' });
       assert.equal(response.status, 307, path);
       assert.equal(response.headers.get('location'), destination, path);
@@ -75,6 +75,12 @@ async function unusedPort() {
     assert.equal((await fetch(`${base}/admin/register`)).status, 404);
     assert.equal((await fetch(`${base}/trips/not_valid`)).status, 404);
     assert.equal((await fetch(`${base}/locations/not_valid`)).status, 404);
+    assert.equal((await fetch(`${base}/stays/not_valid`)).status,404);
+    const stays=await fetch(`${base}/stays`);assert.equal(stays.status,200);assert.match(stays.headers.get('cache-control')??'',/no-store/);assert.equal(stays.headers.get('set-cookie'),null);
+    const staysHtml=await stays.text();assert.match(staysHtml,/<h1>Stays<\/h1>/);assert.doesNotMatch(staysHtml,/internal_notes|storage_key|file_hash|source\.jpg/);
+    if(configured) for(const path of ['/stays/missing-hotel-for-smoke-7af9','/stays/missing-hotel-for-smoke-7af9/60000000-0000-4000-8000-000000000001'])assert.equal((await fetch(`${base}${path}`)).status,404);
+    const hotelLink=staysHtml.match(/href="(\/stays\/[a-z0-9-]+)"/);
+    if(hotelLink){const response=await fetch(`${base}${hotelLink[1]}`);assert.equal(response.status,200);const body=await response.text();assert.doesNotMatch(body,/internal_notes|storage_key|source\.jpg/);const stayLink=body.match(/href="(\/stays\/[a-z0-9-]+\/[a-f0-9-]{36})"/);if(stayLink){const response=await fetch(`${base}${stayLink[1]}`);assert.equal(response.status,200);assert.doesNotMatch(await response.text(),/internal_notes|storage_key|source\.jpg/);}}
     const trips = await fetch(`${base}/trips`);
     assert.equal(trips.status, 200);
     assert.match(trips.headers.get('cache-control') ?? '', /no-store/);

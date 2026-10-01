@@ -46,3 +46,20 @@ export const citySchema = z.object({
 });
 export const tripCitySchema = z.object({ city_id: uuidSchema, sequence: optionalPosition });
 export const tripLocationSchema = z.object({ location_id: uuidSchema, sequence: optionalPosition, visited_at: optionalDate });
+
+const optionalRating = optionalNumber.pipe(z.number().int('Use whole stars only.').min(1).max(5).nullable());
+const flag = z.enum(['', 'yes']).transform(value => value === 'yes');
+export const hotelSchema = z.object({
+  name, slug, city_id: uuidSchema, ...coordinates, brand: optionalText, address: optionalText,
+  description: optionalText, rating: optionalRating,
+  recommended_family: flag, recommended_business: flag, recommended_leisure: flag,
+  status: z.enum(['draft','published']), editorial_order: optionalPosition,
+}).superRefine(pairedCoordinates);
+export const staySchema = z.object({
+  hotel_id: uuidSchema, trip_id: uuidSchema, check_in: optionalDate, check_out: optionalDate,
+  room_type: optionalText, purpose: z.enum(['','business','leisure','family','mixed']).transform(value => value || null),
+  rating: optionalRating, review_text: optionalText, internal_notes: optionalText,
+  status: z.enum(['draft','published']), editorial_order: optionalPosition,
+}).superRefine((data,ctx) => {
+  if(data.check_in && data.check_out && data.check_out < data.check_in) ctx.addIssue({code:'custom',path:['check_out'],message:'Check-out cannot precede check-in.'});
+});

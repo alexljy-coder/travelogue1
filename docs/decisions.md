@@ -130,3 +130,33 @@ Photo context now includes only the publicly resolved Trip/Location slug, enabli
 Index uses twelve Trips plus lookahead, batched supporting geography/cover context and at most three concurrent one-photo cover queries. Detail galleries each use 24 photos plus lookahead; independent simple section pages preserve context. Trip Places and Location Trip relationships are also paged at 24. Supporting City joins are chunked at 200, geographic IDs at 100. Offset pages can shift if content changes concurrently; no queues/cursors/search infrastructure. No migration/new environment/configuration is required. Admin cover selection and Hotel/Stay UI remain deferred.
 
 Milestone 4 is deployed and manually accepted on Vercel per the owner's Milestone 5 instruction.
+
+## D024 — Hotel identity, visit records and existing recommendation ownership
+
+Milestone 5 is deployed and manually accepted on Vercel per the owner. Milestone 6 implements `/admin/hotels` and `/admin/stays`, `/stays` (one published Hotel per entry), `/stays/[hotelSlug]` and `/stays/[hotelSlug]/[stayId]`. The individual lookup verifies Hotel membership; wrong-Hotel, Draft and missing visits return 404. Hotel remains independent of Location and persists across repeated visits. Every Stay belongs to a Trip; dates, room type, purpose, rating and review are optional. Dates are not constrained to an entered Trip interval. Ratings are independent whole 1–5 values, never averages.
+
+Bible sections 5.3/10.7/49 put Family, Business and Personal / Leisure recommendations on Hotel, not Stay. The existing three Hotel flags are edited there and displayed in each Stay's context. No duplicate recommendation columns or new Stay-level product decision are invented. Stay rating/review remain specific to that visit. Public `review_text` and private `internal_notes` stay separate; public projections and anonymous grants omit notes/GPS. Reviews are plain text, not a top-level entity or CMS.
+
+## D025 — Atomic Hotel/Stay geography and safe deletion
+
+New migration `20261001000200_hotels_stays_workflow.sql` adds narrow invoker-rights, fixed-search-path, authenticated-admin-only `admin_save_hotel` and `admin_save_stay` functions. JSON arguments contain explicitly mapped existing columns; no dynamic SQL/privileged backend. Stay publication checks locked actual Hotel/Trip statuses; existing parent-aware RLS independently hides content after parent withdrawal. Stay saves add Hotel City to Trip Cities atomically. Hotel City edits add the City to all associated Trips, preserving explicit old memberships/order. Hotel names normalized by case/edge whitespace are checked within City alongside unique slugs; this is practical duplicate protection, not external property reconciliation.
+
+Confirmed deletion uses existing RESTRICT FKs. Hotels with Stays and Stays with Photos/pending import assignments cannot be deleted. No cascading archive/image deletion or automatic unpublication. Photo deletion continues through the storage-aware recovery protocol. Completed/deleted/cleaned-failed import ledgers clear their temporary Stay assignment so an old operation does not indefinitely block a later unreferenced Stay deletion. Active/cleanup-required assignments remain traceable and block deletion until resolved. Successful storage cleanup clears the temporary Stay FK; retry validates and reattaches the selected Stay.
+
+## D026 — One photo pipeline, durable context selection
+
+Importer explicitly chooses Travel or Hotel; optional Hotel Stay may be assigned at import or afterward. Personal exclusion, Nice/Record, source verification, EXIF privacy, five UUID objects, WebP settings, multipart capabilities, leases/rollback, checksum duplicates and recoverable deletion remain the same. No second bucket/derivative/delivery system.
+
+The new migration adds private `import_items.context` (Travel default for existing operations) and nullable `stay_id`, context CHECK/FK/index. `admin_reserve_context_photo_import` wraps the existing reservation under the batch lock and keeps context/Stay consistent across retries. Finalization creates the selected ready **Draft** context and optional Stay atomically; it never publishes. Duplicate bytes with conflicting context/Stay produce an actionable error, not replacement. Edit the existing Photo deliberately instead. Existing applied migrations are untouched; three existing finalization/failure/deletion functions are replaced only in the new migration, preserving their privileges and recovery semantics.
+
+Photo editor supports both contexts. Travel keeps actual Trip–Location membership and no Stay; Hotel keeps only Stay and derives Trip/Hotel/geography, without artificial Locations. Ready Published Hotel photos require a Published Stay plus Published Hotel/Trip. Featured still requires Published Nice. Parent snapshots are loaded by the authenticated server action; no browser-supplied status is trusted. Anonymous RLS remains unchanged.
+
+## D027 — Public lodging photography, navigation and bounds
+
+Cookie-free anonymous clients query explicit safe Hotel/Stay/Photo projections. Hotel is visible by its own Published status; its dependent Stays/photos require published parents. A published Hotel can remain text-only when no Stay is public. Property general rating/recommendations do not aggregate visit ratings. Each visit exposes only actual optional public editorial fields.
+
+Hotel/Stay covers are the first effectively visible Nice Hotel photo associated through the appropriate Stay/Hotel, ordered by position/capture/created/UUID. No explicit cover selector or new FK columns; no eligible photo means text. Hotel gallery aggregates Nice photography across visible Stays using the existing indexed Photo→Stay FK and a PostgREST inner relationship under RLS. Stay pages have Nice photography and separate The Record; Hotel photos never enter Trip Travel galleries.
+
+Photo → Hotel/Stay/Trip, Stay → Hotel/Trip, Hotel → Stays, and Trip → Where I Stayed use real public links; Photo UUID URLs are unchanged. STAYS is active; MAP/ABOUT remain disabled. Public image routes reuse the existing derivative-only visibility check, private R2 and no-store behavior, with no new credentials/configuration.
+
+Twelve Hotels per index; covers resolved at most three at a time with batched geography/photo contexts. Detail/relationship lists and Nice/Record galleries use 24 rows plus lookahead, independent page parameters and hero exclusion. Indexed relationship reads do not fetch all Hotel photograph IDs. Offset pages may shift during edits. Shared CDN caching, admin cover selection, broad importer reconciliation and Map/Search remain outside this milestone.

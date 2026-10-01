@@ -3,7 +3,7 @@ import type { AdminClient } from '@/lib/admin/queries';
 import { databaseError } from '@/lib/admin/form-state';
 import { PhotoWorkflowError, type ImportRepository } from './ingestion';
 
-const messages = new Set(['Invalid import counts.','Import request identity mismatch.','Import batch not found.','This request was deleted. Select the file again to create a new request.','This batch has reached its file limit.','Import item not found.','Upload expired or is already being processed. Retry after its lease expires.','This import cannot be retried.','This photo has an active operation. Wait before retrying.','Import operation expired.','Import operation changed. Refresh to check its state.','Photo not found.','Remove this photo from covers before deleting it.','Delete operation expired. Retry deletion.']);
+const messages = new Set(['These bytes already have another context or Stay. Edit the existing Photo; importing never replaces it.','Select an existing Stay.','Invalid import counts.','Import request identity mismatch.','Import batch not found.','This request was deleted. Select the file again to create a new request.','This batch has reached its file limit.','Import item not found.','Upload expired or is already being processed. Retry after its lease expires.','This import cannot be retried.','This photo has an active operation. Wait before retrying.','Import operation expired.','Import operation changed. Refresh to check its state.','Photo not found.','Remove this photo from covers before deleting it.','Delete operation expired. Retry deletion.']);
 export function photoDatabaseError(error: { code?: string; message?: string }) {
   return error.code === 'P0001' && error.message && messages.has(error.message) ? error.message : databaseError(error);
 }
@@ -15,7 +15,7 @@ export function createImportRepository(client: AdminClient): ImportRepository {
   }
   return {
     async reserve(input) {
-      const id = await rpc(client.rpc('admin_reserve_photo_import', { p_id: input.id, p_batch_id: input.batch_id, p_filename: input.filename, p_hash: input.file_hash, p_size: input.file_size, p_classification: input.classification }));
+      const id = await rpc(client.rpc('admin_reserve_context_photo_import', { p_id: input.id, p_batch_id: input.batch_id, p_filename: input.filename, p_hash: input.file_hash, p_size: input.file_size, p_classification: input.classification, p_context: input.context ?? 'travel', p_stay_id: input.stay_id ?? null }));
       if (!id) throw new PhotoWorkflowError('Unable to reserve import.');
       return id;
     },

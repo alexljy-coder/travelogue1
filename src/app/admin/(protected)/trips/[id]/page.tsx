@@ -1,3 +1,4 @@
+import {AdminTripStays} from '@/components/admin/trip-stays';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/require-admin';
@@ -39,5 +40,6 @@ export default async function TripPage({ params, searchParams }: { params: Promi
       <AddTripLocation tripId={id} locations={locations.filter((location) => !associated.has(location.id))} />
     </section>
     <DeleteForm action={deleteTrip.bind(null, id)} label="Delete Trip" explanation={`This permanently deletes this Trip and its ${cityLinks?.length ?? 0} City / ${locationLinks?.length ?? 0} Location associations. Cities and Locations are kept. Photos or Stays block deletion.`} blocked={(photos.count ?? 0) || (stays.count ?? 0) ? 'This Trip has Photos or Stays. Keep it, or change its status to Draft.' : undefined} />
+    <AdminTripStays client={client} tripId={id}/>
   </main>;
 }

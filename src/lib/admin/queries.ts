@@ -27,3 +27,12 @@ export async function getGeography(client: AdminClient) {
 export async function getLocations(client: AdminClient) {
   return readAll((from, to) => client.from('locations').select('*').order('name').order('id').range(from, to));
 }
+
+export async function getStayCatalog(client: AdminClient) {
+  const [hotels,trips,stays] = await Promise.all([
+    readAll((from,to)=>client.from('hotels').select('*').order('name').order('id').range(from,to)),
+    readAll((from,to)=>client.from('trips').select('*').order('title').order('id').range(from,to)),
+    readAll((from,to)=>client.from('stays').select('*').order('check_in',{ascending:false,nullsFirst:false}).order('id').range(from,to)),
+  ]);
+  return {hotels,trips,stays:stays.map(stay=>({...stay,hotel_name:hotels.find(h=>h.id===stay.hotel_id)?.name??'',trip_title:trips.find(t=>t.id===stay.trip_id)?.title??''}))};
+}

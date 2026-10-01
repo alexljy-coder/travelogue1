@@ -110,6 +110,6 @@ test('all workflow RPCs reject anonymous and unrelated authenticated users', asy
     }
   });
   const { rows } = await db.query<{ prosecdef: boolean; proconfig: string[] }>("select prosecdef,proconfig from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname like 'admin_%'");
-  assert.equal(rows.length, 17);
+  assert.equal(rows.length, 20);
   assert.ok(rows.every((row) => !row.prosecdef && row.proconfig.includes('search_path=""')));
 });
