@@ -34,7 +34,7 @@ async function unusedPort() {
     }
     assert.ok(ready, 'Production server must start.');
     const home = await fetch(base);
-    assert.match(await home.text(), /FOUND ALONG/);
+    assert.match(await home.text(), /Found Along/);
     assert.equal(home.headers.get('set-cookie'), null);
     assert.equal(home.headers.get('x-content-type-options'), 'nosniff');
 

@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: 'Found Along', description: 'Photogra
 export default async function HomePage() {
   const { photos, unavailable } = await homepagePhotos();
   const [opening, ...selection] = photos;
-  return <main id="archive-content" className="archive-main archive-home"><header className="found-masthead"><h1>FOUND ALONG</h1><p>Photography and places by Alex Lim</p></header>
+  return <main id="archive-content" className="archive-main archive-home"><h1 className="visually-hidden">Found Along</h1><p className="archive-byline">Photography and places by Alex Lim</p>
     {opening ? <><figure className="archive-opening"><Link href={`/photos/${opening.id}`} prefetch={false}><Photograph photo={opening} priority detail /></Link>
       <figcaption><Link href={`/photos/${opening.id}`} prefetch={false}>{photoLabel(opening)}</Link><span>{[opening.place.city, opening.place.country].filter(Boolean).join(' · ')}</span></figcaption></figure>
       {selection.length > 0 && <section aria-labelledby="selected-heading"><div className="archive-section-heading"><h2 id="selected-heading">Recent photography</h2><Link href="/photos">All photographs</Link></div><PhotoGrid photos={selection} /></section>}

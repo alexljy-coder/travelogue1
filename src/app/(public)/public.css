@@ -89,11 +89,10 @@
   font-family: var(--font-editorial), Georgia, serif; font-optical-sizing: auto;
 }
 .public-site .archive-header { padding-block: 2rem 1.5rem; border-bottom: 1px solid #e2dfd8; margin-inline: auto; }
-.archive-name { font-size: 1.25rem; font-weight: 400; letter-spacing: -.02em; }
+.archive-name { font-size: 1.625rem; font-weight: 400; line-height: 1.2; letter-spacing: -.02em; }
 .public-site .archive-main { padding-top: 2.5rem; }
-.public-site .found-masthead { display: block; padding: 0; max-width: none; margin: 0 0 3rem; }
-.public-site .found-masthead h1 { font-size: clamp(2.65rem, 10.5vw, 9.5rem); line-height: .95; letter-spacing: -.055em; font-weight: 400; }
-.found-masthead p { margin: 1.5rem 0 0; color: #615d56; font-size: .9rem; }
+.public-site .archive-home { padding-top: 1.25rem; }
+.archive-byline { margin: 0 0 1.25rem; color: #615d56; font-size: .875rem; line-height: 1.6; }
 .public-site .archive-section-heading { padding-top: 1.5rem; border-top: 1px solid #e2dfd8; }
 .public-site .archive-section-heading h2 { font-size: 1.6rem; }
 .archive-home-line { color: #615d56; font-size: 1rem; margin-top: .8rem; }
@@ -106,8 +105,9 @@
 @media (max-width: 740px) {
   .public-site .archive-header { padding-block: 1.4rem; }
   .public-site .archive-main { padding-top: 1.8rem; }
-  .public-site .found-masthead { margin-bottom: 2rem; }
-  .found-masthead p { margin-top: 1rem; font-size: .8rem; }
+  .archive-name { font-size: 1.5rem; }
+  .public-site .archive-home { padding-top: 1rem; }
+  .archive-byline { font-size: .8125rem; margin-bottom: 1rem; }
   .archive-entry-points { gap: 1rem; margin-top: 3rem; }
   .journey-places { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
