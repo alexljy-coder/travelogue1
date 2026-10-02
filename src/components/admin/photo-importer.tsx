@@ -64,7 +64,7 @@ export function PhotoImporter({stays,stayId}:{stays:StayOption[];stayId?:string}
     finally { setBusy(false); router.refresh(); }
   }
   return <section className="editor">
-    <p>Import at most 10 Lightroom-exported sRGB JPEGs, up to 4000px long edge and 25 MiB each. Sources remain private; every new Photo is Draft.</p>
+    <p>Import at most 10 Lightroom-exported sRGB JPEGs, full-resolution, up to 80 megapixels and 25 MiB each. Sources remain private; every new Photo is Draft.</p>
     <p>Choose the export root folder to retain <strong>01 Nice / 02 Record Shots / 03 Personal</strong> paths. Personal is skipped before file contents are read. Dropping loose files uses your explicit choice below.</p>
     <div className="field"><label htmlFor="import-context">Photo context</label><select id="import-context" disabled={busy||entries.some(e=>e.photoId||e.status!=='Ready')} value={context} onChange={e=>setContext(e.target.value)}><option value="travel">Travel</option><option value="hotel">Hotel</option></select></div>
     {context==='hotel'&&<div className="field"><label htmlFor="import-stay">Stay (optional while Draft)</label><select id="import-stay" disabled={busy||entries.some(e=>e.photoId||e.status!=='Ready')} value={selectedStay} onChange={e=>setSelectedStay(e.target.value)}><option value="">Assign after import</option>{stays.map(s=><option key={s.id} value={s.id}>{s.hotel_name} · {s.check_in??'Undated'} · {s.trip_title}</option>)}</select></div>}

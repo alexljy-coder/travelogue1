@@ -19,7 +19,7 @@ export default async function Page({ searchParams }: {
  {!result.data.length ? <p>No Stays on this page. Create your first Stay to begin.</p> : <ul className="record-list">{result.data.map(record => {
                 const hotel = catalog.hotels.find(h => h.id === record.hotel_id);
                 const trip = catalog.trips.find(t => t.id === record.trip_id);
-                return <li key={record.id}><Link href={`/admin/stays/${record.id}`}>{hotel?.name} · {record.check_in ?? 'Date not recorded'}</Link> · {trip?.title} · {record.status}</li>;
+                return <li key={record.id}><Link href={`/admin/stays/${record.id}`}>{hotel?.name} · {record.check_in ?? 'Date not recorded'}</Link> · {trip?.title ?? 'No Trip'} · {record.status}</li>;
             })}</ul>}
  <nav className="pagination" aria-label="Stays pages">{page > 1 && <Link href={`/admin/stays?page=${page - 1}`}>Previous</Link>}{(result.count ?? 0) > page * 25 && <Link href={`/admin/stays?page=${page + 1}`}>Next</Link>}</nav></main>;
 }

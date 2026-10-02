@@ -22,6 +22,7 @@ export function validationState(values: FormValues, issues: readonly { path: Pro
 }
 
 const workflowMessages = new Set([
+  'A Trip is required for a Stay outside Singapore.', 'A Trip is required for photography outside Singapore.', 'Assign a Trip to dependent home records before moving their geography outside Singapore.',
   'Select an existing City.', 'Select an existing Hotel.', 'Select an existing Trip.', 'Select an existing Stay.',
   'This Hotel no longer exists.', 'This Stay no longer exists.', 'A published Trip and Hotel are required.',
   'This Hotel already exists in this City. Select the existing Hotel.',
@@ -34,6 +35,7 @@ const workflowMessages = new Set([
   'This Trip has Photos or Stays. Keep it, or unpublish it instead.',
 ]);
 export function databaseError(error: { code?: string; message?: string }): string {
+  if (error.message && workflowMessages.has(error.message)) return error.message;
   if (error.code === '23505') return 'This URL name or Country code is already used. Select the existing record or choose another URL name.';
   if (error.code === '23503' || error.code === '23001') return 'This record or association is still referenced. Remove its dependencies first, or keep it unpublished.';
   if (error.code === '23514' || error.code === '23502' || error.code === '22007' || error.code === '22008') return 'Some values are invalid. Check required fields, dates and coordinates.';

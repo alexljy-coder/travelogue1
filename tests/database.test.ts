@@ -139,7 +139,7 @@ test('optional dates permit unknown/partial values; known reversed dates fail', 
 });
 
 test('Stays require Hotel and Trip; repeat Stays and optional reviews are allowed', async () => {
-  await assert.rejects(db.query('update public.stays set trip_id=null where id=$1',[stay]), errorCode('23502'));
+  await assert.rejects(db.query('update public.stays set trip_id=null where id=$1',[stay]), errorCode('23514'));
   await assert.rejects(db.query('update public.stays set hotel_id=null where id=$1',[stay]), errorCode('23502'));
   await db.query('insert into public.stays(hotel_id,trip_id) values ($1,$2)', [hotel,trip]);
   assert.equal((await db.query('select id from public.stays where hotel_id=$1 and trip_id=$2', [hotel,trip])).rows.length, 3);

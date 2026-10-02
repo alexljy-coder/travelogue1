@@ -6,7 +6,7 @@ import { pageNumber, tripDates, validSlug } from '@/lib/data/public-places';
 import { PhotoGrid } from '@/components/public/photograph';
 import { JourneyOpening, SectionPages } from '@/components/public/journey';
 async function visibleLocation(slug:string){if(!validSlug(slug))notFound();const location=await getLocation(slug);if(!location)notFound();return location;}
-export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata>{const location=await visibleLocation((await params).slug);return{title:`${location.name} · Travel archive`,description:location.description??undefined,openGraph:{title:location.name,description:location.description??undefined,type:'website'}};}
+export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata>{const location=await visibleLocation((await params).slug);return{title:`${location.name} · Found Along`,description:location.description??undefined,openGraph:{title:location.name,description:location.description??undefined,type:'website'}};}
 export default async function LocationPage({params,searchParams}:{params:Promise<{slug:string}>;searchParams:Promise<{photos?:string;trips?:string}>}){
   const location=await visibleLocation((await params).slug);const values=await searchParams;const pages={photos:pageNumber(values.photos),trips:pageNumber(values.trips)};
   const {cover,city,trips,nice}=await locationPresentation(location,pages);const base=`/locations/${location.slug}`;

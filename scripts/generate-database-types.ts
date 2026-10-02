@@ -44,7 +44,7 @@ const { rows: routines } = await db.query<Routine>(`select p.proname as name, p.
   array(select format_type(t, null) from unnest(p.proargtypes::oid[]) t) as types,
   p.pronargdefaults as defaults, format_type(p.prorettype, null) as returns
   from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-  where n.nspname='public' and (p.proname='is_admin' or p.proname like 'admin_%') order by p.proname`);
+  where n.nspname='public' and (p.proname in ('is_admin','city_is_singapore') or p.proname like 'admin_%') order by p.proname`);
 const routineType = (type: string) => type === 'void' ? 'undefined' : typeOf({ data_type: type, is_nullable: 'NO' } as Column);
 output += '    };\n    Views: Record<string, never>;\n    Functions: {\n';
 for (const routine of routines) {

@@ -11,8 +11,8 @@ export type PhotoForPublishing = {
 };
 export type PhotoParents = {
   trip?: { id: string; status: PublicationStatus };
-  location?: { id: string; status: PublicationStatus };
-  stay?: { id: string; status: PublicationStatus; trip_status: PublicationStatus; hotel_status: PublicationStatus };
+  location?: { id: string; status: PublicationStatus; country_code?: string };
+  stay?: { id: string; status: PublicationStatus; trip_status: PublicationStatus | null; hotel_status: PublicationStatus; country_code?: string };
   tripLocationAssociated?: boolean;
 };
 
@@ -26,11 +26,11 @@ export function photoPublicationErrors(photo: PhotoForPublishing, parents: Photo
   if (photo.status !== 'published') return errors;
   if (photo.processing_status !== 'ready') errors.push('Source and derivatives must be ready before publication.');
   if (photo.context === 'travel') {
-    if (!photo.trip_id || parents.trip?.id !== photo.trip_id || parents.trip.status !== 'published') errors.push('A published Trip is required.');
+    if (photo.trip_id ? parents.trip?.id !== photo.trip_id || parents.trip.status !== 'published' : parents.location?.country_code !== 'SG') errors.push('A published Trip is required outside Singapore, and any assigned Trip must be Published.');
     if (!photo.location_id || parents.location?.id !== photo.location_id || parents.location.status !== 'published') errors.push('A published Location is required.');
-    if (!parents.tripLocationAssociated) errors.push('The Location must belong to this Trip.');
+    if (photo.trip_id && !parents.tripLocationAssociated) errors.push('The Location must belong to this Trip.');
   } else {
-    if (!photo.stay_id || parents.stay?.id !== photo.stay_id || parents.stay.status !== 'published' || parents.stay.trip_status !== 'published' || parents.stay.hotel_status !== 'published') errors.push('A published Stay with a published Trip and Hotel is required.');
+    if (!photo.stay_id || parents.stay?.id !== photo.stay_id || parents.stay.status !== 'published' || (parents.stay.trip_status === null ? parents.stay.country_code !== 'SG' : parents.stay.trip_status !== 'published') || parents.stay.hotel_status !== 'published') errors.push('A published Stay with a published Trip and Hotel is required.');
   }
   return errors;
 }
@@ -49,7 +49,7 @@ export function coverEligible(photo: PhotoForPublishing, parents: PhotoParents, 
   return photo.context === 'hotel' && stayHotelId === target.id;
 }
 
-export function stayPublicationErrors(status: PublicationStatus, tripStatus: PublicationStatus, hotelStatus: PublicationStatus): string[] {
+export function stayPublicationErrors(status: PublicationStatus, tripStatus: PublicationStatus | null, hotelStatus: PublicationStatus, countryCode?: string): string[] {
   if (status !== 'published') return [];
-  return tripStatus === 'published' && hotelStatus === 'published' ? [] : ['A published Trip and Hotel are required.'];
+  return (tripStatus === 'published' || tripStatus === null && countryCode === 'SG') && hotelStatus === 'published' ? [] : ['A published Trip and Hotel are required.'];
 }

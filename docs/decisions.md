@@ -1,6 +1,6 @@
 # Implementation architecture decisions
 
-Product authority: [buildbible.md](./buildbible.md). Owner resolutions below supersede Milestone 0 proposals; the Build Bible itself is unchanged.
+Product authority: [buildbible.md](./buildbible.md). Owner resolutions below supersede Milestone 0 proposals; the Build Bible now includes the explicitly approved M7 superseding rules.
 
 ## Resolved by the owner before Milestone 1
 
@@ -160,3 +160,24 @@ Hotel/Stay covers are the first effectively visible Nice Hotel photo associated 
 Photo → Hotel/Stay/Trip, Stay → Hotel/Trip, Hotel → Stays, and Trip → Where I Stayed use real public links; Photo UUID URLs are unchanged. STAYS is active; MAP/ABOUT remain disabled. Public image routes reuse the existing derivative-only visibility check, private R2 and no-store behavior, with no new credentials/configuration.
 
 Twelve Hotels per index; covers resolved at most three at a time with batched geography/photo contexts. Detail/relationship lists and Nice/Record galleries use 24 rows plus lookahead, independent page parameters and hero exclusion. Indexed relationship reads do not fetch all Hotel photograph IDs. Offset pages may shift during edits. Shared CDN caching, admin cover selection, broad importer reconciliation and Map/Search remain outside this milestone.
+
+
+## D028 — Found Along and ordinary Singapore home geography
+
+The owner approved the M7 assessment before implementation. Public identity is FOUND ALONG, with Photography and places by Alex Lim. Self-hosted variable Newsreader and Geist use next/font/local; checked-in font files include their SIL Open Font licenses ([Newsreader source](https://github.com/google/fonts/tree/main/ofl/newsreader), [Geist source](https://github.com/google/fonts/tree/main/ofl/geist)). Fonts are scoped to public presentation; no runtime font provider, pictorial logo or admin redesign. A restrained FA SVG is the utility icon. Existing editorial pages share type/space/rules; homepage leads with masthead, Featured Nice opening, recent Nice photography and real Trips/Singapore/Stays links. Existing MAP/ABOUT disabled labels remain; no fake pages.
+
+Singapore is identified by unique countries.code = SG through ordinary City/Location relationships. `/singapore` uses bounded anonymous Travel-only inner joins with an explicit Photo→Location FK hint (the cover FK makes an unqualified relationship ambiguous). Nice photographs lead; Record has a separate paged section. Published Places link to existing slug routes. No Home table, flag, hard-coded destination rows or separate Photo system. Singapore photography remains in global Photos and can belong to a real Trip. Hotel photography never joins this Home view. Counts are deferred rather than adding per-Place aggregate queries.
+
+## D029 — Singapore-only optional Trip and publication safety
+
+M7 explicitly supersedes the prior every-Travel-Photo/every-Stay Trip requirement. Published Travel requires Location; Trip may be absent only if its Location is in SG. Every Stay requires Hotel; Trip may be absent only for an SG Hotel, including historical Draft Stays. Any assigned Trip must remain Published for public visibility. A Singapore photo with a Draft Trip is hidden until that relationship is deliberately removed or its Trip is Published. Existing Trip–Location membership FK remains intact for supplied pairs. Overseas trip-less publication is rejected.
+
+Migration 20261002000100_found_along_home.sql adjusts row constraints, nullable Stay Trip and anonymous Photo/Stay policies; adds an invoker-only geography boolean and narrow assignment/geography guards; updates Hotel/Stay save transactions to skip absent Trip memberships. Guards reject geography edits that would invalidate trip-less home records, without cascading publication flags. RLS independently re-checks current geography and required parents; safe column grants and singleton administrator mutation policies remain. No owner-bypassing public view or service credential. Server preflight derives SG from the database, not submitted flags. Nullable Trip queries/selectors/links omit absent context. Hotel remains distinct from Location.
+
+## D030 — Full-resolution source and compatible derivative profiles
+
+Remove 4000px/16MP restrictions; retain ten sequential JPEGs, 25 MiB per file and add an 80MP decoder ceiling. A real 9520×6336 (~60MP) synthetic JPEG is tested. This is correctness coverage, not proof of worst-case photographic CPU/memory on Vercel. Files above 25 MiB remain explicitly rejected; no source recompression or dimension-based rejection at 4000px. Lightroom remains master. Source SHA-256/unchanged bytes, EXIF/GPS privacy, Personal pre-upload exclusion, duplicate/recovery/deletion protocols remain unchanged.
+
+New WebP targets: 3200/1920/960/480, qualities 85/82/80/75, effort 4, native aspect and withoutEnlargement. When targets collapse to the same source dimensions, reuse the first higher-quality encoded buffer, retaining all four deterministic object names for existing finalization/deletion contracts. Responsive srcSet deduplicates identical widths. Source is still private and never a public delivery variant.
+
+The same migration adds a technical photos.derivative_profile smallint (1 legacy; 2 M7), safe for public projection. Existing Photos default to 1; finalization writes the processing result profile. This is representation metadata, not source replacement/version history or a product entity. Responsive widths use the correct profile, avoiding falsely advertising older R2 bytes at new dimensions. No existing object is rewritten; deleted/reselected exports retain existing duplicate semantics. Public routes still check anonymous visibility on every read and stream unchanged WebPs with private/CDN no-store; optimizer remains blocked. No new environment variables, bucket configuration, CDN or shared caching.

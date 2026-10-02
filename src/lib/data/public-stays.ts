@@ -36,9 +36,10 @@ export function orderedStays(client: Client) {
 export async function relatedStays(client: Client, key: 'hotel_id' | 'trip_id', id: string, page = 1) {
   const rows = checked(await orderedStays(client).eq(key, id).range((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
   const stays = rows.slice(0, PAGE_SIZE);
+  const tripIds = [...new Set(stays.flatMap(stay => stay.trip_id ? [stay.trip_id] : []))];
   const [hotels, trips] = await Promise.all([
     stays.length ? client.from('hotels').select('id,name,slug').in('id', [...new Set(stays.map(stay => stay.hotel_id))]) : { data: [], error: null },
-    stays.length ? client.from('trips').select('id,title,slug').in('id', [...new Set(stays.map(stay => stay.trip_id))]) : { data: [], error: null },
+    tripIds.length ? client.from('trips').select('id,title,slug').in('id', tripIds) : { data: [], error: null },
   ]);
   const hotelRows = checked(hotels), tripRows = checked(trips);
   return {
@@ -105,7 +106,7 @@ export async function stayPresentation(client: Client, stay: PublicStay, pages: 
   const cover = await stayCover(client, stay.id);
   const [nice, record, trip] = await Promise.all([
     stayPhotos(client, stay.id, 'nice', pages.photos, cover?.id), stayPhotos(client, stay.id, 'record', pages.record),
-    client.from('trips').select(tripProjection).eq('id', stay.trip_id).maybeSingle(),
+    stay.trip_id ? client.from('trips').select(tripProjection).eq('id', stay.trip_id).maybeSingle() : Promise.resolve({data:null,error:null}),
   ]);
   if (trip.error) throw new Error('Public Stay context unavailable.');
   return { cover, nice, record, trip: trip.data };

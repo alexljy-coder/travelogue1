@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { publicTrips } from '@/lib/data/public-journeys';
 import { pageNumber, tripDates } from '@/lib/data/public-places';
 import { Photograph } from '@/components/public/photograph';
-export const metadata:Metadata={title:'Trips · Travel archive',openGraph:{title:'Trips · Travel archive',type:'website'}};
+export const metadata:Metadata={title:'Trips · Found Along',openGraph:{title:'Trips · Found Along',type:'website'}};
 export default async function TripsPage({searchParams}:{searchParams:Promise<{page?:string}>}) {
   const page=pageNumber((await searchParams).page);
   const {trips,hasNext,unavailable}=await publicTrips(page);

@@ -14,13 +14,17 @@ export function createAnonymousClient(db: PGlite, requests: string[] = []) {
       assert.ok(['photos','locations','trips','cities','countries','trip_cities','trip_locations','hotels','stays'].includes(table));
       const rawSelect = url.searchParams.get('select')!;
       const hotelJoin=rawSelect.endsWith(',stays!inner(hotel_id)');
-      const select=hotelJoin?rawSelect.replace(',stays!inner(hotel_id)',''):rawSelect;
+      const singaporePhotoJoin=rawSelect.endsWith(',locations!photos_location_id_fkey!inner(city_id,cities!inner(country_id,countries!inner(code)))');
+      const singaporePlaceJoin=rawSelect.endsWith(',cities!inner(country_id,countries!inner(code))');
+      const select=hotelJoin?rawSelect.replace(',stays!inner(hotel_id)',''):singaporePhotoJoin?rawSelect.split(',locations!photos_location_id_fkey!inner')[0]:singaporePlaceJoin?rawSelect.split(',cities!inner')[0]:rawSelect;
       assert.ok(/^[a-z_,]+$/.test(select));
       requests.push(`${table}:${select}`);
       const values: string[] = []; const conditions: string[] = [];
       for (const [key, value] of url.searchParams) {
         if (['select','order','limit','offset'].includes(key)) continue;
         if(hotelJoin&&key==='stays.hotel_id'){values.push(value.slice(3));conditions.push(`exists(select 1 from public.stays s where s.id=public.photos.stay_id and s.hotel_id=$${values.length})`);continue;}
+        if(singaporePhotoJoin && key==='locations.cities.countries.code') { values.push(value.slice(3));conditions.push(`exists(select 1 from public.locations l join public.cities c on c.id=l.city_id join public.countries k on k.id=c.country_id where l.id=public.photos.location_id and k.code=$${values.length})`);continue; }
+        if(singaporePlaceJoin && key==='cities.countries.code') { values.push(value.slice(3));conditions.push(`exists(select 1 from public.cities c join public.countries k on k.id=c.country_id where c.id=public.locations.city_id and k.code=$${values.length})`);continue; }
         assert.ok(/^[a-z_]+$/.test(key));
         if (value.startsWith('eq.')) { values.push(value.slice(3)); conditions.push(`${key}=$${values.length}`); }
         else if (value.startsWith('neq.')) { values.push(value.slice(4)); conditions.push(`${key}<>$${values.length}`); }

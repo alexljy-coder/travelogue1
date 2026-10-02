@@ -61,7 +61,7 @@ async function imported(storage = new FakeR2(), repository = repo()) {
 test('complete import stores five objects, creates one ready Draft Photo and is retry-idempotent', async () => owner(async () => {
   const { id,data,service,storage,repository } = await imported();
   assert.equal(storage.objects.size,5); assert.deepEqual(storage.objects.get(objectKey(id,'source')),source);
-  const photo = await repository.photo(id); assert.equal(photo?.status,'draft'); assert.equal(photo?.featured,false); assert.equal(photo?.classification,'nice'); assert.equal(photo?.context,'travel'); assert.equal(photo?.trip_id,null); assert.equal(photo?.processing_status,'ready');
+  const photo = await repository.photo(id); assert.equal(photo?.status,'draft'); assert.equal(photo?.featured,false); assert.equal(photo?.classification,'nice'); assert.equal(photo?.context,'travel'); assert.equal(photo?.trip_id,null); assert.equal(photo?.processing_status,'ready'); assert.equal(photo?.derivative_profile,2);
   const cleanups = storage.cleanups;
   assert.deepEqual(await service.prepare(data),{ id,existing:true });
   const duplicate = await input(); assert.deepEqual(await service.prepare(duplicate),{ id,existing:true });

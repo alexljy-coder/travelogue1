@@ -4,7 +4,9 @@ export const MAX_BATCH = 10;
 export const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
 export const variants = ['source', 'large', 'medium', 'thumbnail', 'tiny'] as const;
 export type Variant = typeof variants[number];
-export const derivativeEdges = { large: 2400, medium: 1600, thumbnail: 600, tiny: 300 } as const;
+export const legacyDerivativeEdges = { large: 2400, medium: 1600, thumbnail: 600, tiny: 300 } as const;
+export const derivativeEdges = { large: 3200, medium: 1920, thumbnail: 960, tiny: 480 } as const;
+export const MAX_SOURCE_PIXELS = 80_000_000;
 export const webpQuality = { large: 85, medium: 82, thumbnail: 80, tiny: 75 } as const;
 export function objectKey(id: string, variant: Variant) {
   if (!z.uuid().safeParse(id).success || !variants.includes(variant)) throw new Error('Invalid photo identity or representation.');

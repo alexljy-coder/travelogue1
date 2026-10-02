@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: {
     params: Promise<{
         hotelSlug: string;
     }>;
-}): Promise<Metadata> { const hotel = await visibleHotel((await params).hotelSlug); return { title: `${hotel.name} · Stays`, description: hotel.description ?? undefined, openGraph: { title: hotel.name, description: hotel.description ?? undefined, type: 'website' } }; }
+}): Promise<Metadata> { const hotel = await visibleHotel((await params).hotelSlug); return { title: `${hotel.name} · Found Along`, description: hotel.description ?? undefined, openGraph: { title: hotel.name, description: hotel.description ?? undefined, type: 'website' } }; }
 export default async function Page({ params, searchParams }: {
     params: Promise<{
         hotelSlug: string;

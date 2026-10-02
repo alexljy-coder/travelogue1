@@ -223,7 +223,7 @@ A Hotel can have many Stays.
 
 A Stay is one actual visit to a Hotel.
 
-Every Stay belongs to a Trip in V1.
+A Stay belongs to a Trip, except that a Stay at a Hotel in Singapore may omit Trip. Singapore is identified through Hotel → City → Country (code SG). Any assigned Trip remains a required published parent.
 
 A Stay may contain:
 
@@ -266,7 +266,7 @@ Recommendations are the owner's personal recommendations, not objective rankings
 
 - ID
 - Hotel — required
-- Trip — required
+- Trip — required outside Singapore; optional for Singapore Hotels
 - Check-in — optional
 - Check-out — optional
 - Room type — optional
@@ -411,8 +411,13 @@ Photo
 
 For a published Travel photo:
 
-- Trip is required
 - Location is required
+- Trip is required outside Singapore
+- Singapore Location photography may omit Trip
+- Singapore photography may also belong to a real Trip
+- Any assigned Trip and the Location must be Published for public visibility
+
+Singapore is home, derived through Location → City → Country (code SG). It is not a fake Trip, new table, flag or Photo context. Hotel photography remains separate and does not automatically enter the Singapore photographic view.
 
 ## 8.2 Hotel Photo
 
@@ -467,7 +472,7 @@ No AI-generated captions or descriptions.
 
 ## Relationships
 
-- Trip ID — required for published Travel photos
+- Trip ID — required for published Travel photos outside Singapore; optional for Singapore Locations
 - Location ID — required for published Travel photos
 - Stay ID — required for published Hotel photos
 
@@ -808,7 +813,7 @@ Recommended standard:
 
 - JPEG
 - sRGB
-- 4000px long edge
+- Full-resolution JPEG dimensions; no 4000px resize requirement
 - Quality 88
 - Screen sharpening: Standard
 - EXIF retained
@@ -1032,14 +1037,14 @@ It does not need to store five separate URLs.
 
 Source:
 
-- 4000px long-edge JPEG
+- Unchanged full-resolution sRGB Lightroom JPEG, subject to bounded byte/pixel safety limits
 
 Derivatives:
 
-- Large — approximately 2400px
-- Medium — approximately 1600px
-- Thumbnail — approximately 600px
-- Tiny — approximately 300px
+- Large — approximately 3200px
+- Medium — approximately 1920px
+- Thumbnail — approximately 960px
+- Tiny — approximately 480px
 
 All preserve the original aspect ratio.
 
@@ -1053,7 +1058,7 @@ AVIF is deferred.
 
 ## Source philosophy
 
-The 4000px JPEG in R2 is the **website publishing source**, not the photographic master.
+The exported JPEG in R2 is the **website publishing source**, not the photographic master.
 
 Lightroom remains the photographic master.
 
@@ -1078,10 +1083,10 @@ Photo detail
 → large
 
 Fullscreen
-→ source where appropriate
+→ large metadata-free derivative; source is administrator-only
 ```
 
-Responsive image delivery should avoid sending 4000px assets to small screens unnecessarily.
+Responsive image delivery should avoid sending unnecessarily large derivatives to small screens unnecessarily.
 
 The exact responsive breakpoints can be tuned after visual testing.
 
@@ -1094,6 +1099,7 @@ Primary navigation:
 ```text
 PHOTOS
 TRIPS
+SINGAPORE
 STAYS
 MAP
 ABOUT
@@ -1104,7 +1110,7 @@ Brand/logo on the left.
 Desktop:
 
 ```text
-[ BRAND ]                  PHOTOS TRIPS STAYS MAP ABOUT
+[ FOUND ALONG ]            PHOTOS TRIPS SINGAPORE STAYS MAP ABOUT
 ```
 
 Mobile:
@@ -1883,21 +1889,13 @@ This sequence allows the data model and importer to be proven before the full ed
 
 # 47. Branding
 
-Branding and naming are intentionally **not locked**.
+The public identity is **FOUND ALONG**.
 
-The existing `lexphotos.com` domain should not be treated as an architectural dependency.
+Supporting line: **Photography and places by Alex Lim**.
 
-The application should support changing:
+Typography provides the wordmark: restrained editorial serif with clean sans-serif navigation and metadata. FA is utility branding only. Photographs supply visual colour. The existing `lexphotos.com` domain is not an architectural dependency; domain work remains deferred.
 
-- Brand name
-- Logo
-- Domain
-- Visual identity
-
-without changing the underlying data model.
-
-Brand workshop is a separate future step.
-
+The homepage leads with the identity, Featured photography, real context, recent photographs and restrained Trips / Singapore / Stays entry points. `/singapore` is a permanent Home view of ordinary geographic records and eligible Travel photography. Map and Search are not part of Milestone 7.
 ---
 
 # 48. Final Product Definition
@@ -1931,16 +1929,16 @@ The following decisions are considered locked unless deliberately revisited:
 - RLS
 - Cloudflare R2 for image storage
 - Lightroom remains photographic source of truth
-- 4000px sRGB JPEG publishing source
+- Full-resolution sRGB JPEG publishing source, unchanged and private
 - WebP derivatives
 - Native photo aspect ratios
 - Nice / Record / Personal Lightroom workflow
 - Personal photos never imported
 - Record Shots available in Trip archive but not main Photos page
-- Travel photos require Trip + Location when published
+- Travel photos require Location when published; Trip is required outside Singapore
 - Hotel photos require Stay but not Location
 - Hotel is distinct from Location
-- Stay always belongs to a Trip in V1
+- Stay requires Trip outside Singapore; Singapore Hotel Stays may omit it
 - Hotel persists independently across multiple Stays
 - Trip dates optional
 - Stay dates optional
@@ -1957,7 +1955,7 @@ The following decisions are considered locked unless deliberately revisited:
 - No social functionality
 - Light editorial visual direction
 - Minimal/no animation
-- Brand/domain remains TBD
+- Found Along identity is established; domain remains TBD
 - V1 prioritizes a strong archive over feature breadth
 
 # 50. Guiding Rule
@@ -1967,3 +1965,7 @@ When a future feature request conflicts with the simplicity of V1, ask:
 > **Does this make the archive meaningfully better, or does it merely make the system more complicated?**
 
 If it is the latter, defer it to Phase 2.
+
+## Milestone 7 owner-approved refinements (2026-10-02)
+
+These rules supersede the earlier Trip-required, 4000px-source and undecided-brand rules. Singapore is ordinary geography, not another entity. Nice / Record / Personal and Travel / Hotel meanings are unchanged. Public sources and exact GPS remain inaccessible. Current ingestion is bounded to ten JPEGs, 25 MiB each and 80 megapixels; no upscaling. New derivatives use 3200/1920/960/480; existing derivatives keep their legacy profile without automatic replacement. Public delivery re-checks effective visibility on every request and has no shared cache that could outlive unpublication.

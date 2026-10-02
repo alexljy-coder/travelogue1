@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import exifr from 'exifr';
-import { derivativeEdges, MAX_SOURCE_BYTES, webpQuality } from './model';
+import { derivativeEdges, derivativeSize, MAX_SOURCE_BYTES, MAX_SOURCE_PIXELS, webpQuality } from './model';
 
 const text = (value: unknown) => typeof value === 'string' && value.trim() ? value.trim().slice(0, 500) : null;
 const positive = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
@@ -29,19 +29,23 @@ export function normalizeExif(raw: Record<string, unknown> = {}) {
 }
 export async function processJpeg(source: Buffer, expectedHash: string, expectedSize: number) {
   if (source.length !== expectedSize || source.length > MAX_SOURCE_BYTES || createHash('sha256').update(source).digest('hex') !== expectedHash) throw new Error('Uploaded bytes do not match the selected file.');
-  const options = { limitInputPixels: 16_000_000, failOn: 'warning' as const };
+  const options = { limitInputPixels: MAX_SOURCE_PIXELS, failOn: 'warning' as const };
   const metadata = await sharp(source, options).metadata();
-  if (metadata.format !== 'jpeg' || !metadata.width || !metadata.height || Math.max(metadata.width, metadata.height) > 4000 || metadata.space === 'cmyk') throw new Error('Use a valid sRGB Lightroom JPEG with a long edge of 4000px or less.');
+  if (metadata.format !== 'jpeg' || !metadata.width || !metadata.height || metadata.space === 'cmyk') throw new Error('Use a valid RGB Lightroom JPEG within the 25 MiB and 80-megapixel safety limits.');
   const rotated = (metadata.orientation ?? 1) >= 5;
   const width = rotated ? metadata.height : metadata.width;
   const height = rotated ? metadata.width : metadata.height;
   let exif: Record<string, unknown> = {};
   try { exif = await exifr.parse(source, { reviveValues: false, translateValues: false, xmp: false, icc: false, iptc: false }) ?? {}; } catch { /* Optional EXIF failure must not invent metadata or block valid pixels. */ }
   const derivatives: { variant: keyof typeof derivativeEdges; bytes: Buffer }[] = [];
+  const encoded = new Map<string, Buffer>();
   for (const [variant, edge] of Object.entries(derivativeEdges)) {
     // Sharp auto-orients, converts output to sRGB and strips EXIF/XMP/ICC by default.
-    const bytes = await sharp(source, options).rotate().resize({ width: edge, height: edge, fit: 'inside', withoutEnlargement: true }).webp({ quality: webpQuality[variant as keyof typeof webpQuality], effort: 4 }).timeout({ seconds: 15 }).toBuffer();
+    const dimensions = derivativeSize(width,height,edge);
+    const identity = `${dimensions.width}x${dimensions.height}`;
+    const bytes = encoded.get(identity) ?? await sharp(source, options).rotate().resize({ width: edge, height: edge, fit: 'inside', withoutEnlargement: true }).webp({ quality: webpQuality[variant as keyof typeof webpQuality], effort: 4 }).timeout({ seconds: 15 }).toBuffer();
+    encoded.set(identity,bytes);
     derivatives.push({ variant: variant as keyof typeof derivativeEdges, bytes });
   }
-  return { metadata: { width, height, ...normalizeExif(exif) }, derivatives };
+  return { metadata: { derivative_profile: 2, width, height, ...normalizeExif(exif) }, derivatives };
 }

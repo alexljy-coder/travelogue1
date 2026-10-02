@@ -7,7 +7,7 @@ import {StayLinks} from '@/components/public/stay';
 import { PhotoGrid } from '@/components/public/photograph';
 import { JourneyOpening, SectionPages, TripIdentity } from '@/components/public/journey';
 async function visibleTrip(slug:string){if(!validSlug(slug))notFound();const trip=await getTrip(slug);if(!trip)notFound();return trip;}
-export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata>{const trip=await visibleTrip((await params).slug);return{title:`${trip.title} · Travel archive`,description:trip.description??undefined,openGraph:{title:trip.title,description:trip.description??undefined,type:'website'}};}
+export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata>{const trip=await visibleTrip((await params).slug);return{title:`${trip.title} · Found Along`,description:trip.description??undefined,openGraph:{title:trip.title,description:trip.description??undefined,type:'website'}};}
 export default async function TripPage({params,searchParams}:{params:Promise<{slug:string}>;searchParams:Promise<{photos?:string;record?:string;places?:string;stays?:string}>}){
   const trip=await visibleTrip((await params).slug);const values=await searchParams;
   const pages={photos:pageNumber(values.photos),record:pageNumber(values.record),places:pageNumber(values.places),stays:pageNumber(values.stays)};

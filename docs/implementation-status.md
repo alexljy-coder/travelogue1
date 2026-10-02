@@ -1,6 +1,6 @@
 # Implementation status
 
-Milestones 1–5 and hosted verification/acceptance are complete per the owner. Milestone 6 Hotels and Stays is implemented and locally verified on 2026-10-02; results are recorded below. Applying its new migration and deployment acceptance remain owner steps. No hosted migration, Cloudflare change or remote content mutation was performed.
+Milestones 1–5 and hosted verification/acceptance are complete per the owner. Milestone 6 Hotels and Stays is implemented and locally verified on 2026-10-02; results are recorded below. Applying its new migration and deployment acceptance remain owner steps. Milestone 7 Found Along / archive refinement is also implemented and locally verified; its manual acceptance is recorded below. No hosted migration, Cloudflare change or remote content mutation was performed.
 
 ## Implemented
 
@@ -13,7 +13,7 @@ Milestones 1–5 and hosted verification/acceptance are complete per the owner. 
 - Parent-aware anonymous reads and column privacy; authenticated archive access requires the singleton administrator. Unrelated authenticated users receive zero rows and cannot mutate. Private identity cannot be browser-managed.
 - Typed publishing/cover eligibility preflight helpers for future photo/Stay workflows; Trip/Location status can now be edited in admin.
 - Generated Supabase-compatible table/relationship types from migrated PostgreSQL catalog and drift-check script.
-- 92 automated tests, including real embedded PostgreSQL RPCs/constraints/grants/RLS, Sharp JPEG/WebP/EXIF processing, authenticated API boundaries and fake-R2 failure/retry/deletion scenarios. No production bucket access.
+- 100 automated tests, including real embedded PostgreSQL RPCs/constraints/grants/RLS, Sharp JPEG/WebP/EXIF processing, authenticated API boundaries and fake-R2 failure/retry/deletion scenarios. No production bucket access.
 - Production-server smoke checks against the build's actual configuration, all admin route guards, private image/storage endpoints, unauthorized upload operations, cache/privacy headers, absent registration routes and public Photo/Trip/Location behavior. Missing configuration is separately covered by unit tests.
 - Exact dependency pins/lockfile, Node 24/pnpm tooling, lint/typecheck/build scripts, CI workflow and local Supabase config with signup disabled.
 - Setup guides explaining hosted Auth/migrations and private R2 credentials/CORS/controlled testing. .env.example contains empty variable names only; no real credentials committed.
@@ -46,11 +46,11 @@ Milestone 3 verification run on 2026-10-01:
 
 ## In Progress
 
-- Owner application of the Milestone 6 migration and hosted acceptance of Hotels/Stays/photo assignment.
+- Owner hosted acceptance of any pending Milestone 6 steps and the new Milestone 7 migration/refinements.
 
 ## Not Started
 
-- Milestone 7: Map V1 (requires map/tile-provider decision); not begun.
+- Interactive Map remains deferred by the owner’s Milestone 7 brief; provider choice is still open.
 - Explicit cover selection and drag-and-drop ordering UI.
 - Importer refinements, grouping/suggestions and broader browser/performance work. Re-import/replacement remains Phase 2.
 - Map, About, final visual design/branding, broader performance/accessibility work and final release checks.
@@ -60,7 +60,7 @@ Milestone 3 verification run on 2026-10-01:
 - Embedded PostgreSQL uses test-only Auth objects; automated ingestion/security tests use fake R2, not destructive production access. Milestones 1–3 hosted verification are owner-reported. Milestone 4 browser/production checks read existing anonymous-visible hosted Photos/derivatives without remote writes. Milestone 4 is deployed/accepted per the owner; Milestone 5 is also deployed/accepted per the owner; Milestone 6 needs hosted acceptance.
 - All three existing migrations are applied per the owner. Milestones 4–5 add no migration or environment variables. Milestone 6 adds one unapplied hosted migration; run only that new file. Do not rerun/reset applied migrations.
 - Folder picker preserves paths where supported. Loose-file drag/drop requires explicit Nice/Record and Personal-exclusion confirmation; lost classification cannot be inferred. Recursive dropped-directory traversal is deferred. Exact-byte duplicates are reused, not replaced; different exports of the same image are not reconciled.
-- Source limit: ten eligible JPEGs, 25 MiB/file, 4000px/16 megapixels, sequential bounded processing. The initial Vercel import proof is owner-verified; future larger-volume CPU/memory/runtime capacity still needs measurement. Export quality/sharpening and untagged source profile are not retrospectively verifiable. No automatic orphan sweeper/background recovery is introduced; hard interruptions retain traceable state for manual cleanup after lease expiry.
+- Current source limit: ten eligible JPEGs, 25 MiB/file and 80 megapixels; no 4000px restriction, sequential bounded processing. The initial Vercel import proof is owner-verified; future larger-volume CPU/memory/runtime capacity still needs measurement. Export quality/sharpening and untagged source profile are not retrospectively verifiable. No automatic orphan sweeper/background recovery is introduced; hard interruptions retain traceable state for manual cleanup after lease expiry.
 - Next's current lint dependencies require ESLint 9/TypeScript <6.1; ESLint 9.39.5 emits an upstream support/deprecation warning. Peer-compatible versions are pinned; review a compatible tooling upgrade when available. This is a development-tooling limitation, not a security bypass.
 - Cover relationship eligibility is application-level, with tested helpers but no live mutation workflow. Future admin cover selectors must enforce eligibility; implemented public Trip/Location cover queries resolve anonymous effective Photo visibility and exact context/identity.
 - Map/tile selection remains deferred. Public delivery intentionally has no shared cache; it checks visibility per image and streams through Vercel. A later traffic/cost optimization must preserve parent-aware withdrawal. Already authorized/in-flight/downloaded bytes cannot be recalled. No unresolved product conflict was found.
@@ -277,4 +277,51 @@ Materially changed:
 
 Limitations: recommendation ownership stays at Hotel as specified by the Bible; per-Stay recommendations would require an explicit later product decision. No explicit cover selector; covers use safe deterministic fallback. Offset pages can move during edits; images are uncached and already downloaded bytes cannot be revoked. Active/cleanup-required import assignments deliberately block Stay deletion until completed or successfully cleaned. Hosted migration/Auth/PostgREST/R2 acceptance is an owner step; local browser tests use synthetic database/Auth/image fixtures rather than real new Hotel data. No unresolved technical/product conflict.
 
-Recommend Milestone 7: Map V1 using published curated Location/Hotel coordinates, basic clustering/pan/zoom and links into existing pages. Decide the tile provider explicitly; do not implement Trip routes, photo GPS pins or Search. Milestone 7 has not begun.
+The owner superseded the prior Map-first recommendation with Milestone 7 archive refinement below. Map has not begun.
+
+
+## Milestone 7 — Found Along / archive refinement
+
+Implemented locally after owner approval of the architecture assessment:
+
+- FOUND ALONG identity, Photography and places by Alex Lim, licensed self-hosted Newsreader/Geist via next/font/local, FA utility icon, shared editorial type/spacing/rules across public routes, photography-first homepage and Trips/Singapore/Stays entry points. Admin styling remains separate. MAP/ABOUT retain existing disabled treatment.
+- `/singapore`: ordinary code-SG geography, Featured/fallback Nice opening, paged Nice photography, published Places and distinct The Record. Travel-only filtering excludes Hotel photographs; no fake Trips, geographic seed records or new Home entity/flag. Global Photos and real Trip associations remain valid.
+- Singapore Travel photos can publish without Trip. Singapore Hotel Stays can omit Trip; overseas equivalents still require it. Supplied Trip remains a publication parent. Row/geography guards, matching RLS and server-derived preflight preserve privacy. Nullable Trip links/selectors/queries handled throughout Photo/Stay context.
+- Full-resolution JPEG ingestion up to 25 MiB / 80MP; tested 9520×6336. New non-upscaled WebPs 3200/1920/960/480, unchanged qualities and stripped metadata. Identical output dimensions reuse encoded bytes. Five UUID objects, source/checksum, Personal skip, duplicate protection and recoverable cleanup/deletion preserved.
+- Technical derivative profile keeps older 2400/1600/600/300 objects accurately described; no old R2 object regeneration. Private sources and per-request public-image visibility/no-store/optimizer protection unchanged.
+- New migration `20261002000100_found_along_home.sql`; existing migrations untouched. No hosted SQL, Cloudflare configuration, credentials or remote content writes performed. No new environment variables or package dependencies.
+
+### Verification (2026-10-02)
+
+| Check | Result |
+| --- | --- |
+| lint | Pass |
+| typecheck | Pass |
+| automated tests | Pass, 100/100 |
+| database type-drift | Pass |
+| production build | Pass; public content remains dynamic |
+| production route smoke | Pass; includes Singapore, private guards/source rejection and no-store |
+| responsive Chrome | Pass across ten populated public routes at 1440/768/390/320px, no overflow; Singapore empty state, keyboard skip link and isolated landscape/portrait/panorama proportions |
+
+Browser verification uses disposable local migrated PostgreSQL and synthetic WebP responses. It does not prove hosted PostgREST/R2 deployment or real photographic Vercel resource capacity. Actual hosted M7 acceptance remains the owner step. The 60MP synthetic Sharp test verifies dimensions/metadata/derivatives without production bucket access.
+
+### Material files
+
+- New migration; generated `src/types/database.ts`; updated type generator to include the geography boolean RPC.
+- `src/lib/data/public-{singapore,home}.ts` and `(public)/singapore/page.tsx`.
+- Public layout/home/styles/metadata, `src/app/fonts.ts`, licensed font assets and `src/app/icon.svg`, shared Photograph/context-link components.
+- Photo processing/model/ingestion messaging; public Photo/Stay/Recent query projections and nullable Trip handling.
+- Photo server action/publication/schema validation; Photo/Stay admin forms/selectors/detail/list; safe validation messages.
+- `tests/singapore.test.ts`, existing database/Photo/import regression assertions and anonymous transport adapter; production smoke script.
+- Bible explicitly superseded rules, decisions/technical plan/status/R2 setup and README.
+
+### Manual acceptance
+
+1. Confirm M1–M6 migration history. Review/apply only `20261002000100_found_along_home.sql` manually, then deploy through GitHub/Vercel. Keep existing variables/bucket/CORS. Never run synthetic fixtures against hosted Supabase.
+2. Create/select ordinary Country Singapore (code SG), City and real Locations. Publish a Travel Nice photo at a Published SG Location with no Trip; check `/singapore`, global Photos, Location and UUID detail. Add a real Published Trip/membership: it should appear in both contexts. A supplied Draft Trip must hide it.
+3. Try publishing an overseas Location photo without Trip: reject. Test Draft Location/Photo exclusion and Featured + Record rejection. Unpublish a required parent; fresh public detail/image reads must return 404.
+4. Create a Singapore Hotel Stay without Trip, publish only through Published Hotel/Stay and assign Hotel photography. Check Stays/Hotel/Photo routes and absence from `/singapore`. Overseas trip-less Stay must fail. Geography moves that invalidate existing home assignments must show an actionable error.
+5. Import one genuine full-resolution JPEG under 25 MiB/80MP before a small batch. Compare source hash, four derivative dimensions/orientation/GPS removal, profile 2 and previews. Check old Photos still work at legacy profile 1. Oversized/Personal files must never upload. Exercise existing retry/deletion checks.
+6. Inspect desktop/tablet/mobile/320px masthead, nav, portrait/landscape/panorama, metadata and review text. Check keyboard navigation, no overflow and no GPS/private notes/source/credential leakage.
+
+Known limits: real high-entropy full-resolution processing on the actual Vercel plan still requires measurement; JPEGs above 25 MiB remain rejected. Older derivatives are retained rather than silently regenerated. Location counts, explicit cover selection, Map, Search and About content remain deferred. Offset pagination/no shared cache remain existing tradeoffs. No additional unresolved product decision. Recommend next: owner acceptance and bounded performance/accessibility refinement before selecting the next discovery feature; do not automatically start Map/Search.

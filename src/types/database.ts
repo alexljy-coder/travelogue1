@@ -295,6 +295,7 @@ export type Database = {
           iso: number | null;
           created_at: string;
           updated_at: string;
+          derivative_profile: number;
         };
         Insert: {
           id?: string;
@@ -329,6 +330,7 @@ export type Database = {
           iso?: number | null;
           created_at?: string;
           updated_at?: string;
+          derivative_profile?: number;
         };
         Update: {
           id?: string;
@@ -363,6 +365,7 @@ export type Database = {
           iso?: number | null;
           created_at?: string;
           updated_at?: string;
+          derivative_profile?: number;
         };
         Relationships: [
           { foreignKeyName: "photo_trip_location_membership"; columns: ["trip_id","location_id"]; isOneToOne: false; referencedRelation: "trip_locations"; referencedColumns: ["trip_id","location_id"] },
@@ -376,7 +379,7 @@ export type Database = {
         Row: {
           id: string;
           hotel_id: string;
-          trip_id: string;
+          trip_id: string | null;
           check_in: string | null;
           check_out: string | null;
           room_type: string | null;
@@ -392,7 +395,7 @@ export type Database = {
         Insert: {
           id?: string;
           hotel_id: string;
-          trip_id: string;
+          trip_id?: string | null;
           check_in?: string | null;
           check_out?: string | null;
           room_type?: string | null;
@@ -408,7 +411,7 @@ export type Database = {
         Update: {
           id?: string;
           hotel_id?: string;
-          trip_id?: string;
+          trip_id?: string | null;
           check_in?: string | null;
           check_out?: string | null;
           room_type?: string | null;
@@ -541,6 +544,7 @@ export type Database = {
       admin_save_stay: { Args: { p_id: string | null; p_record: Json | null; }; Returns: string };
       admin_set_trip_city: { Args: { p_trip_id: string | null; p_city_id: string | null; p_sequence?: number | null; }; Returns: undefined };
       admin_set_trip_location: { Args: { p_trip_id: string | null; p_location_id: string | null; p_sequence?: number | null; p_visited_at?: string | null; }; Returns: undefined };
+      city_is_singapore: { Args: { p_city_id: string | null; }; Returns: boolean };
       is_admin: { Args: Record<string, never>; Returns: boolean };
     };
     Enums: Record<string, never>;

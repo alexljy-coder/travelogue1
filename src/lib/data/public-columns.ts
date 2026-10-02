@@ -2,7 +2,7 @@ import type { Database } from '@/types/database';
 
 // Anonymous column grants enforce these boundaries even if a query accidentally asks for more.
 export const publicPhotoColumns = [
-  'id', 'width', 'height', 'classification', 'context', 'featured', 'caption', 'description',
+  'id', 'width', 'height', 'derivative_profile', 'classification', 'context', 'featured', 'caption', 'description',
   'status', 'editorial_order', 'trip_id', 'location_id', 'stay_id', 'captured_at',
   'camera_make', 'camera_model', 'lens', 'focal_length', 'aperture', 'shutter_speed', 'iso',
   'created_at', 'updated_at',

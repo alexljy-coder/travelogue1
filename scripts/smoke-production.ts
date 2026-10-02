@@ -34,10 +34,17 @@ async function unusedPort() {
     }
     assert.ok(ready, 'Production server must start.');
     const home = await fetch(base);
-    assert.match(await home.text(), /Travel archive/);
+    assert.match(await home.text(), /FOUND ALONG/);
     assert.equal(home.headers.get('set-cookie'), null);
     assert.equal(home.headers.get('x-content-type-options'), 'nosniff');
 
+    const singapore = await fetch(`${base}/singapore`);
+    assert.equal(singapore.status,200);
+    assert.match(singapore.headers.get('cache-control') ?? '',/no-store/);
+    const singaporeHtml = await singapore.text();
+    assert.match(singaporeHtml, /<h1>Singapore<\/h1>/);
+    assert.match(singaporeHtml, /Home\./);
+    assert.doesNotMatch(singaporeHtml,/internal_notes|storage_key|file_hash|source\.jpg/);
     const admin = await fetch(`${base}/admin`, { redirect: 'manual' });
     assert.equal(admin.status, 307);
     const destination = admin.headers.get('location');

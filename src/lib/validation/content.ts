@@ -56,7 +56,7 @@ export const hotelSchema = z.object({
   status: z.enum(['draft','published']), editorial_order: optionalPosition,
 }).superRefine(pairedCoordinates);
 export const staySchema = z.object({
-  hotel_id: uuidSchema, trip_id: uuidSchema, check_in: optionalDate, check_out: optionalDate,
+  hotel_id: uuidSchema, trip_id: z.union([uuidSchema,z.literal('')]).transform(value=>value||null), check_in: optionalDate, check_out: optionalDate,
   room_type: optionalText, purpose: z.enum(['','business','leisure','family','mixed']).transform(value => value || null),
   rating: optionalRating, review_text: optionalText, internal_notes: optionalText,
   status: z.enum(['draft','published']), editorial_order: optionalPosition,

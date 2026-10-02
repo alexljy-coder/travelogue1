@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { galleryPhotos } from '@/lib/data/public-archive';
 import { PhotoGrid } from '@/components/public/photograph';
-export const metadata: Metadata = { title: 'Photos · Travel archive', description: 'Photographs from a personal visual travel archive.', openGraph: { title: 'Photos · Travel archive', description: 'Photographs from a personal visual travel archive.', type: 'website' } };
+export const metadata: Metadata = { title: 'Photos · Found Along', description: 'Photographs from a personal visual travel archive.', openGraph: { title: 'Photos · Found Along', description: 'Photographs from a personal visual travel archive.', type: 'website' } };
 export default async function PhotosPage({ searchParams }: { searchParams: Promise<{ view?: string; page?: string }> }) {
   const parameters = await searchParams;
   const classification = parameters.view === 'record' ? 'record' : 'nice';

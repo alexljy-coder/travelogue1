@@ -92,7 +92,7 @@ export function createIngestion(repo: ImportRepository, storage: PhotoStorage, p
           const photo = await repo.photo(id);
           if (photo?.processing_status === 'ready') return { id, existing: true }; // Lost response after commit.
           const clean = await cleanupFailure(id, token);
-          throw new PhotoWorkflowError(clean ? `Import failed during ${stage}. Storage was cleaned; retry after checking R2/database setup or the Lightroom JPEG export (sRGB, 4000px or smaller).` : 'Import failed and storage cleanup is incomplete. Use Retry cleanup in import status.', 503);
+          throw new PhotoWorkflowError(clean ? `Import failed during ${stage}. Storage was cleaned; retry after checking R2/database setup or the Lightroom JPEG export (sRGB JPEG, at most 25 MiB and 80 megapixels).` : 'Import failed and storage cleanup is incomplete. Use Retry cleanup in import status.', 503);
         } catch (error) {
           if (error instanceof PhotoWorkflowError) throw error;
           throw new PhotoWorkflowError('Import outcome could not be confirmed. Refresh import status; do not assume success. Active operations expire before cleanup can be retried.', 503);

@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: {
         hotelSlug: string;
         stayId: string;
     }>;
-}): Promise<Metadata> { const { hotel } = await visible(await params); return { title: `Stay at ${hotel.name} · Travel archive`, openGraph: { title: `Stay at ${hotel.name}`, type: 'website' } }; }
+}): Promise<Metadata> { const { hotel } = await visible(await params); return { title: `Stay at ${hotel.name} · Found Along`, openGraph: { title: `Stay at ${hotel.name}`, type: 'website' } }; }
 export default async function Page({ params, searchParams }: {
     params: Promise<{
         hotelSlug: string;

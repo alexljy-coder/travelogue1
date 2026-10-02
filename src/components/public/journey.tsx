@@ -15,6 +15,7 @@ export function SectionPages({base,values,name,page,hasNext}:{base:string;values
 }
 export function PhotoContextLinks({photo}:{photo:PhotoWithContext}) {
   return <nav className="journey-context-links" aria-label="Photo archive context">
+    {photo.context === 'travel' && photo.place.country_code === 'SG' && <Link href="/singapore">Singapore · Home</Link>}
     {photo.place.trip_slug&&<Link href={`/trips/${photo.place.trip_slug}`} prefetch={false}>{photo.place.trip}</Link>}
     {photo.place.hotel_slug&&<Link href={`/stays/${photo.place.hotel_slug}`} prefetch={false}>{photo.place.hotel}</Link>}
     {photo.place.hotel_slug&&photo.place.stay_id&&<Link href={`/stays/${photo.place.hotel_slug}/${photo.place.stay_id}`} prefetch={false}>This Stay</Link>}

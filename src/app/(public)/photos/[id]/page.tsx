@@ -13,7 +13,7 @@ async function photoOrNotFound(id: string) {
 }
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const photo = await photoOrNotFound((await params).id);
-  const title = `${photoLabel(photo)} · Travel archive`;
+  const title = `${photoLabel(photo)} · Found Along`;
   const description = photo.description || photo.caption || [photo.place.location || photo.place.hotel, photo.place.city, photo.place.country].filter(Boolean).join(', ') || 'A photograph from the travel archive.';
   // OG title/text only until a canonical public domain is deliberately configured.
   return { title, description, openGraph: { title, description, type: 'website' } };

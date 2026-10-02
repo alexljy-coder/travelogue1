@@ -1,16 +1,16 @@
 import 'server-only';
 import { cache } from 'react';
 import { createPublicClient } from '@/lib/supabase/public';
-import { attachContexts, orderedPhotos, PAGE_SIZE, queryPhoto, selectHomepagePhotos } from './public-photos';
+import { attachContexts, orderedPhotos, PAGE_SIZE, queryPhoto, selectHomepagePhotos, photoProjection } from './public-photos';
 export async function homepagePhotos() {
   try {
     const client = createPublicClient();
     const [featured, recent] = await Promise.all([
-      orderedPhotos(client).eq('classification', 'nice').eq('featured', true).limit(9),
-      orderedPhotos(client).eq('classification', 'nice').limit(9),
+      orderedPhotos(client).eq('classification', 'nice').eq('featured', true).limit(1),
+      client.from('photos').select(photoProjection).eq('status','published').eq('classification','nice').order('captured_at',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false}).order('id').limit(9),
     ]);
     if (featured.error || recent.error) throw new Error('Public archive unavailable.');
-    return { photos: await attachContexts(client, selectHomepagePhotos(featured.data ?? [], recent.data ?? [])), unavailable: false };
+    return { photos: await attachContexts(client, selectHomepagePhotos(featured.data ?? [], recent.data ?? [], 10)), unavailable: false };
   } catch { return { photos: [], unavailable: true }; }
 }
 export async function galleryPhotos(classification: 'nice' | 'record', page: number) {

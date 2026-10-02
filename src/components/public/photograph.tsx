@@ -1,14 +1,14 @@
 import Link from 'next/link';
-import { derivativeEdges, derivativeSize } from '@/lib/photos/model';
+import { derivativeEdges, legacyDerivativeEdges, derivativeSize } from '@/lib/photos/model';
 import type { PhotoWithContext } from '@/lib/data/public-photos';
 import { publicVariants } from '@/lib/photos/public-image';
 export function photoLabel(photo: PhotoWithContext) {
   return photo.caption || [photo.place.location || photo.place.hotel, photo.place.city, photo.place.country].filter(Boolean).join(', ') || 'Photograph';
 }
-export function responsiveSources(photo: Pick<PhotoWithContext, 'id' | 'width' | 'height'>) {
+export function responsiveSources(photo: Pick<PhotoWithContext, 'id' | 'width' | 'height'> & { derivative_profile?: number }) {
   const seen = new Set<number>();
   return publicVariants.flatMap((variant) => {
-    const width = derivativeSize(photo.width, photo.height, derivativeEdges[variant]).width;
+    const width = derivativeSize(photo.width, photo.height, (photo.derivative_profile === 2 ? derivativeEdges : legacyDerivativeEdges)[variant]).width;
     if (seen.has(width)) return [];
     seen.add(width);
     return [`/photos/${photo.id}/image/${variant} ${width}w`];

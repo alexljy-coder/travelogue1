@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 // Narrower than anonymous grants; never SELECT * or private metadata.
-export const photoProjection = 'id,width,height,classification,context,featured,caption,description,editorial_order,captured_at,camera_make,camera_model,lens,focal_length,aperture,shutter_speed,iso,created_at,location_id,trip_id,stay_id' as const;
+export const photoProjection = 'id,width,height,derivative_profile,classification,context,featured,caption,description,editorial_order,captured_at,camera_make,camera_model,lens,focal_length,aperture,shutter_speed,iso,created_at,location_id,trip_id,stay_id' as const;
 type Row = Database['public']['Tables']['photos']['Row'];
-export type PublicPhoto = Pick<Row, 'id' | 'width' | 'height' | 'classification' | 'context' | 'featured' | 'caption' | 'description' | 'editorial_order' | 'captured_at' | 'camera_make' | 'camera_model' | 'lens' | 'focal_length' | 'aperture' | 'shutter_speed' | 'iso' | 'created_at' | 'location_id' | 'trip_id' | 'stay_id'>;
-export type PhotoWithContext = PublicPhoto & { place: { location: string | null; city: string | null; country: string | null; trip: string | null; location_slug?: string | null; trip_slug?: string | null; hotel?: string | null; hotel_slug?: string | null; stay_id?: string | null } };
+export type PublicPhoto = Pick<Row, 'id' | 'width' | 'height' | 'derivative_profile' | 'classification' | 'context' | 'featured' | 'caption' | 'description' | 'editorial_order' | 'captured_at' | 'camera_make' | 'camera_model' | 'lens' | 'focal_length' | 'aperture' | 'shutter_speed' | 'iso' | 'created_at' | 'location_id' | 'trip_id' | 'stay_id'>;
+export type PhotoWithContext = PublicPhoto & { place: { location: string | null; city: string | null; country: string | null; country_code?: string | null; trip: string | null; location_slug?: string | null; trip_slug?: string | null; hotel?: string | null; hotel_slug?: string | null; stay_id?: string | null } };
 export const PAGE_SIZE = 24;
 export const isPhotoId = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 export function orderedPhotos(client: SupabaseClient<Database>) {
@@ -30,7 +30,7 @@ export async function attachContexts(client: SupabaseClient<Database>, photos: P
   const hotelIds=[...new Set((stays.data??[]).map(s=>s.hotel_id))];
   const hotels=hotelIds.length?await client.from('hotels').select('id,name,slug,city_id').in('id',hotelIds):{data:[],error:null};
   if(hotels.error)throw new Error('Public Hotel context unavailable.');
-  const tripIds = [...new Set([...photos.flatMap((p) => p.trip_id ? [p.trip_id] : []),...(stays.data??[]).map(s=>s.trip_id)])];
+  const tripIds = [...new Set([...photos.flatMap((p) => p.trip_id ? [p.trip_id] : []),...(stays.data??[]).flatMap(s=>s.trip_id?[s.trip_id]:[])])];
   const [locations, trips] = await Promise.all([
     locationIds.length ? client.from('locations').select('id,name,slug,city_id').in('id', locationIds) : Promise.resolve({ data: [], error: null }),
     tripIds.length ? client.from('trips').select('id,title,slug').in('id', tripIds) : Promise.resolve({ data: [], error: null }),
@@ -40,7 +40,7 @@ export async function attachContexts(client: SupabaseClient<Database>, photos: P
   const cities = cityIds.length ? await client.from('cities').select('id,name,country_id').in('id', cityIds) : { data: [], error: null };
   if (cities.error) throw new Error('Public geography unavailable.');
   const countryIds = [...new Set((cities.data ?? []).map((c) => c.country_id))];
-  const countries = countryIds.length ? await client.from('countries').select('id,name').in('id', countryIds) : { data: [], error: null };
+  const countries = countryIds.length ? await client.from('countries').select('id,name,code').in('id', countryIds) : { data: [], error: null };
   if (countries.error) throw new Error('Public geography unavailable.');
   return photos.map((photo) => {
     const location = locations.data?.find((l) => l.id === photo.location_id);
@@ -49,7 +49,7 @@ export async function attachContexts(client: SupabaseClient<Database>, photos: P
     const city = cities.data?.find((c) => c.id === (location?.city_id??hotel?.city_id));
     const country = countries.data?.find((c) => c.id === city?.country_id);
     const trip = trips.data?.find((t) => t.id === (photo.trip_id??stay?.trip_id));
-    return { ...photo, place: { location: location?.name ?? null, city: city?.name ?? null, country: country?.name ?? null, trip: trip?.title ?? null, hotel:hotel?.name??null,hotel_slug:hotel?.slug??null,stay_id:stay?.id??null,location_slug: location?.slug ?? null, trip_slug: trip?.slug ?? null } };
+    return { ...photo, place: { location: location?.name ?? null, city: city?.name ?? null, country: country?.name ?? null, country_code: country?.code ?? null, trip: trip?.title ?? null, hotel:hotel?.name??null,hotel_slug:hotel?.slug??null,stay_id:stay?.id??null,location_slug: location?.slug ?? null, trip_slug: trip?.slug ?? null } };
   });
 }
 export async function queryPhoto(client: SupabaseClient<Database>, id: string) {

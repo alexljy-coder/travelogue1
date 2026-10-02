@@ -52,7 +52,7 @@ test('real JPEG processing handles no EXIF, aspect ratio, sizing and invalid sou
     const metadata = await sharp(derivative.bytes).metadata();
     dimensions.push([metadata.width, metadata.height]); assert.equal(metadata.format, 'webp'); assert.equal(metadata.exif, undefined);
   }
-  assert.deepEqual(dimensions, [[2400,1200],[1600,800],[600,300],[300,150]]);
+  assert.deepEqual(dimensions, [[3000,1500],[1920,960],[960,480],[480,240]]);
   await assert.rejects(processJpeg(source, '0'.repeat(64), source.length));
   const png = await sharp(source).png().toBuffer();
   await assert.rejects(processJpeg(png, createHash('sha256').update(png).digest('hex'), png.length));

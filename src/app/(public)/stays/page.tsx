@@ -4,7 +4,7 @@ import { publicHotels } from '@/lib/data/public-lodging';
 import { pageNumber } from '@/lib/data/public-places';
 import { Photograph } from '@/components/public/photograph';
 import { HotelEditorial } from '@/components/public/stay';
-export const metadata: Metadata = { title: 'Stays · Travel archive', openGraph: { title: 'Stays · Travel archive', type: 'website' } };
+export const metadata: Metadata = { title: 'Stays · Found Along', openGraph: { title: 'Stays · Found Along', type: 'website' } };
 export default async function Page({ searchParams }: {
     searchParams: Promise<{
         page?: string;

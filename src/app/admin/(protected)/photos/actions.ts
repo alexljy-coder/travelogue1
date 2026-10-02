@@ -28,9 +28,13 @@ export async function savePhoto(id: string, _previous: FormState, form: FormData
     else return { error: 'The selected Trip no longer exists.', values };
   }
   if (record.location_id) {
-    const { data, error } = await client.from('locations').select('id,status').eq('id', record.location_id).maybeSingle();
+    const { data, error } = await client.from('locations').select('id,status,city_id').eq('id', record.location_id).maybeSingle();
     if (error) return { error: 'Unable to verify the Location. Try again.', values };
-    if (data) parents.location = { ...data, status: data.status as PublicationStatus };
+    if (data) {
+      const home = await client.rpc('city_is_singapore', {p_city_id:data.city_id});
+      if (home.error) return {error:'Unable to verify Location geography.',values};
+      parents.location = { ...data, status: data.status as PublicationStatus, country_code:home.data ? 'SG' : undefined };
+    }
     else return { error: 'The selected Location no longer exists.', values };
   }
   if (record.trip_id && record.location_id) {
@@ -42,9 +46,11 @@ export async function savePhoto(id: string, _previous: FormState, form: FormData
   if(record.stay_id) {
     const {data:stay,error} = await client.from('stays').select('id,status,trip_id,hotel_id').eq('id',record.stay_id).maybeSingle();
     if(error || !stay) return {error:'Unable to verify the selected Stay.',values};
-    const [trip,hotel] = await Promise.all([client.from('trips').select('status').eq('id',stay.trip_id).single(),client.from('hotels').select('status').eq('id',stay.hotel_id).single()]);
+    const [trip,hotel] = await Promise.all([stay.trip_id ? client.from('trips').select('status').eq('id',stay.trip_id).single() : Promise.resolve({data:null,error:null}),client.from('hotels').select('status,city_id').eq('id',stay.hotel_id).single()]);
     if(trip.error || hotel.error) return {error:'Unable to verify Stay parents.',values};
-    parents.stay={id:stay.id,status:stay.status as PublicationStatus,trip_status:trip.data.status as PublicationStatus,hotel_status:hotel.data.status as PublicationStatus};
+    const home = await client.rpc('city_is_singapore',{p_city_id:hotel.data.city_id});
+    if(home.error) return {error:'Unable to verify Hotel geography.',values};
+    parents.stay={id:stay.id,status:stay.status as PublicationStatus,trip_status:trip.data?.status as PublicationStatus ?? null,hotel_status:hotel.data.status as PublicationStatus,country_code:home.data?'SG':undefined};
   }
   const errors = photoPublicationErrors({ ...photo, ...record, context: record.context, processing_status: 'ready' }, parents);
   if (errors.length) return { error: errors.join(' '), values };
