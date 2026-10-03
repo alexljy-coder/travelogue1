@@ -64,7 +64,7 @@ There is no separate Story entity in V1.
 
 There is no separate Review entity in V1.
 
-A review is content attached to a Stay.
+A review is the current personal opinion attached to a Hotel, not a separate entity.
 
 ## 2.1 Geography
 
@@ -211,108 +211,19 @@ The public site may show chronology, but does not need to present the Trip as a 
 
 ## 5.1 Hotel
 
-A Hotel is a persistent physical property.
+A Hotel is a persistent property and the owner's current opinion of it. Hotel owns the optional whole-star rating (1–5), current public review, Family / Business / Personal-Leisure recommendations, Hotel photography and optional cover. Revisiting a Hotel does not create a new review or gallery. Edit Hotel when the current opinion changes; no historical rating versions.
 
-Example:
-
-> Grand Hyatt Beijing
-
-A Hotel can have many Stays.
+Hotel fields: ID, required name/slug/City, optional brand/address/paired representative coordinates/description/rating/review_text/cover_photo_id/editorial position, existing recommendation flags, Draft/Published and timestamps. Hotel is not a Location.
 
 ## 5.2 Stay
 
-A Stay is one actual visit to a Hotel.
+A Stay is a lightweight visit record: Hotel, optional check-in/out dates, Trip, private internal note, publication status, ID/timestamps and retained internal display position. Room type, purpose, per-visit rating and review are removed in M7.1. Multiple Stays can reference one Hotel. Dates remain unknown when unknown; compare only when both are known.
 
-A Stay belongs to a Trip, except that a Stay at a Hotel in Singapore may omit Trip. Singapore is identified through Hotel → City → Country (code SG). Any assigned Trip remains a required published parent.
+Trip remains required outside Singapore. Singapore Hotels (Hotel → City → Country code SG) can have Stays without Trip. Any assigned Trip must be Published for public visit history. Hotel photography no longer depends on an individual Stay/Trip.
 
-A Stay may contain:
+## 5.3 Current opinion and history
 
-- dates
-- room type
-- purpose
-- rating
-- review
-- notes
-- photographs
-
-A Stay does not require a review.
-
-A Stay may simply be a historical record with photographs.
-
-## 5.3 Hotel fields
-
-- ID
-- Name — required
-- Slug — required
-- Brand — optional
-- City — required
-- Address — optional
-- Latitude — optional
-- Longitude — optional
-- Description — optional
-- Rating — optional, whole stars 1–5
-- Recommended for Family — boolean
-- Recommended for Business — boolean
-- Recommended for Personal / Leisure — boolean
-- Status:
-  - Draft
-  - Published
-- Created timestamp
-- Updated timestamp
-
-Recommendations are the owner's personal recommendations, not objective rankings.
-
-## 5.4 Stay fields
-
-- ID
-- Hotel — required
-- Trip — required outside Singapore; optional for Singapore Hotels
-- Check-in — optional
-- Check-out — optional
-- Room type — optional
-- Purpose — optional
-- Rating — optional, whole stars 1–5
-- Review text — optional
-- Notes — optional
-- Status:
-  - Draft
-  - Published
-- Created timestamp
-- Updated timestamp
-
-### Multiple stays
-
-One Hotel can have multiple Stays.
-
-Example:
-
-```text
-Grand Hyatt Beijing
-
-Stay #1
-Dec 2024
-King Deluxe
-Business
-4 stars
-Review
-
-Stay #2
-Apr 2025
-King Deluxe
-Business
-No review
-
-Stay #3
-Dec 2026
-Executive Suite
-Family
-5 stars
-Review
-```
-
-The Hotel page can show:
-
-> Stayed 3 times · 2 reviews
+Record another visit without re-entering rating, review or photographs. Hotel opinion and gallery persist when a visit is edited/deleted. Visit history is understated; private notes never appear publicly. No separate Review entity.
 
 ---
 
@@ -330,7 +241,11 @@ Therefore:
 TRIP
  ├── Travel Photos
  └── Stays
-       └── Hotel Photos
+
+HOTEL
+ ├── Current opinion
+ ├── Hotel Photos
+ └── Stays (visits)
 ```
 
 Hotel photographs do **not** automatically appear in Trip galleries.
@@ -422,22 +337,10 @@ Singapore is home, derived through Location → City → Country (code SG). It i
 ## 8.2 Hotel Photo
 
 ```text
-Photo
- └── Stay
-       ├── Hotel
-       │    └── City
-       │          └── Country
-       └── Trip
+Photo → Hotel → City → Country
 ```
 
-For a published Hotel photo:
-
-- Stay is required
-- Location is NOT required
-
-Hotel photos do not create artificial Location records.
-
-This is an explicit V1 decision.
+Published Hotel photography requires Hotel. It does not require Stay, Trip or Location. Hotel gallery accumulates photographs across visits without duplicating R2 objects. Hotel must be Published for public visibility. Hotel photography stays separate from normal Travel/Singapore photography.
 
 ---
 
@@ -474,7 +377,7 @@ No AI-generated captions or descriptions.
 
 - Trip ID — required for published Travel photos outside Singapore; optional for Singapore Locations
 - Location ID — required for published Travel photos
-- Stay ID — required for published Hotel photos
+- Hotel ID — required for published Hotel photos
 
 Invalid combinations should be prevented by application/database validation.
 
@@ -608,6 +511,8 @@ address
 latitude
 longitude
 description
+review_text
+cover_photo_id
 rating
 recommended_family
 recommended_business
@@ -625,11 +530,7 @@ hotel_id
 trip_id
 check_in
 check_out
-room_type
-purpose
-rating
-review_text
-notes
+internal_notes
 status
 created_at
 updated_at
@@ -655,7 +556,7 @@ status
 
 trip_id
 location_id
-stay_id
+hotel_id
 
 captured_at
 latitude
@@ -1198,37 +1099,9 @@ Do not manually store these statistics.
 
 # 24. Stays UX
 
-Main navigation calls this section:
+STAYS presents each Published Hotel once. `/stays/[hotelSlug]` is the primary public property/current-opinion page: identity, City/Country, current rating/recommendations/review, eligible Hotel photography and understated published visit history/Trip links. Nice photographs lead; Record remains a separate documentary section.
 
-**STAYS**
-
-not Hotels.
-
-The Stays index presents each Hotel once.
-
-Hotel page contains:
-
-- Hotel identity
-- City
-- General rating
-- Recommendation flags
-- Your stays
-- Photography
-- Reviews where available
-
-Individual Stay contains:
-
-- Hotel
-- Trip
-- Dates if known
-- Room type
-- Purpose
-- Rating
-- Review
-- Notes
-- Photos
-
-A hotel can have many historical stays.
+Individual Stay pages are no longer a core public concept. Existing `/stays/[hotelSlug]/[stayId]` URLs verify public visit membership, then redirect to the Hotel. Hidden/missing/wrong-Hotel visits return 404. New public links target Hotel, not individual visits.
 
 ---
 
@@ -1675,7 +1548,7 @@ Deletion should never affect the Lightroom master archive.
 - Trip detail
 - Stays
 - Hotel detail
-- Stay detail
+- Hotel visit history and safe old-Stay redirects
 - Map V1
 - About
 
@@ -1936,7 +1809,7 @@ The following decisions are considered locked unless deliberately revisited:
 - Personal photos never imported
 - Record Shots available in Trip archive but not main Photos page
 - Travel photos require Location when published; Trip is required outside Singapore
-- Hotel photos require Stay but not Location
+- Hotel photos require Hotel, not Stay/Trip/Location
 - Hotel is distinct from Location
 - Stay requires Trip outside Singapore; Singapore Hotel Stays may omit it
 - Hotel persists independently across multiple Stays
@@ -1969,3 +1842,7 @@ If it is the latter, defer it to Phase 2.
 ## Milestone 7 owner-approved refinements (2026-10-02)
 
 These rules supersede the earlier Trip-required, 4000px-source and undecided-brand rules. Singapore is ordinary geography, not another entity. Nice / Record / Personal and Travel / Hotel meanings are unchanged. Public sources and exact GPS remain inaccessible. Current ingestion is bounded to ten JPEGs, 25 MiB each and 80 megapixels; no upscaling. New derivatives use 3200/1920/960/480; existing derivatives keep their legacy profile without automatic replacement. Public delivery re-checks effective visibility on every request and has no shared cache that could outlive unpublication.
+
+## Milestone 7.1 owner-approved consolidation (2026-10-03)
+
+Hotel owns current opinion and photography; Stay is a lightweight visit. Existing Stay rating/review/room/purpose data is intentionally discarded, without inferring Hotel content. Photo Hotel assignments derive safely from existing Stay relationships; UUID/storage objects remain unchanged. Previously hidden Published Hotel photos are demoted to Draft before removing the old parent, avoiding accidental exposure. Only Hotel now gates Hotel-photo visibility; Travel rules remain unchanged. RLS, private sources/GPS/notes and per-request no-store authorization remain release requirements. Map/Search remain deferred.

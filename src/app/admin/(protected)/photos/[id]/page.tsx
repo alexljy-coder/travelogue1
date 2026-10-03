@@ -13,15 +13,15 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
   if (!uuidSchema.safeParse(id).success) notFound();
   const { data: photo, error } = await client.from('photos').select('*').eq('id',id).maybeSingle();
   if (error) throw new Error('Unable to load Photo.'); if (!photo) notFound();
-  const [trips, locations, catalog, memberships] = await Promise.all([
-    readAll((from,to) => client.from('trips').select('*').order('title').order('id').range(from,to)), getLocations(client), getStayCatalog(client),
+  const [locations, catalog, memberships] = await Promise.all([
+    getLocations(client), getStayCatalog(client),
     readAll((from,to) => client.from('trip_locations').select('trip_id,location_id').order('trip_id').order('location_id').range(from,to)),
   ]);
   return <main><p><Link href="/admin/photos">Photos</Link></p><h1>{photo.filename}</h1>
     {photo.processing_status === 'ready' ? <>
       <Image className="admin-photo-preview" unoptimized src={`/admin/photos/${id}/image/medium`} width={photo.width} height={photo.height} alt={photo.caption || photo.filename} priority />
       <p><a href={`/admin/photos/${id}/image/source`}>Download private source JPEG</a> (may contain exact GPS; administrator only)</p>
-      <PhotoForm photo={photo} trips={trips} locations={locations} memberships={memberships} stays={catalog.stays} />
+      <PhotoForm photo={photo} trips={catalog.trips} locations={locations} memberships={memberships} hotels={catalog.hotels} />
     </> : <p className="error">Photo is hidden and its storage is not ready. An interrupted deletion must be retried below.</p>}
     <section className="content-section"><h2>Source and metadata</h2><dl className="photo-metadata">
       <dt>ID</dt><dd>{photo.id}</dd><dt>Dimensions</dt><dd>{photo.width} × {photo.height}</dd><dt>Source size</dt><dd>{(photo.file_size/1024/1024).toFixed(2)} MiB</dd>

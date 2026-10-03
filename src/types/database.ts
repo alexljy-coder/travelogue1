@@ -79,6 +79,8 @@ export type Database = {
           editorial_order: number | null;
           created_at: string;
           updated_at: string;
+          review_text: string | null;
+          cover_photo_id: string | null;
         };
         Insert: {
           id?: string;
@@ -98,6 +100,8 @@ export type Database = {
           editorial_order?: number | null;
           created_at?: string;
           updated_at?: string;
+          review_text?: string | null;
+          cover_photo_id?: string | null;
         };
         Update: {
           id?: string;
@@ -117,9 +121,12 @@ export type Database = {
           editorial_order?: number | null;
           created_at?: string;
           updated_at?: string;
+          review_text?: string | null;
+          cover_photo_id?: string | null;
         };
         Relationships: [
           { foreignKeyName: "hotels_city_id_fkey"; columns: ["city_id"]; isOneToOne: false; referencedRelation: "cities"; referencedColumns: ["id"] },
+          { foreignKeyName: "hotels_cover_photo_id_fkey"; columns: ["cover_photo_id"]; isOneToOne: false; referencedRelation: "photos"; referencedColumns: ["id"] },
         ];
       };
       import_batches: {
@@ -172,7 +179,7 @@ export type Database = {
           created_at: string;
           updated_at: string;
           context: string;
-          stay_id: string | null;
+          hotel_id: string | null;
         };
         Insert: {
           id: string;
@@ -189,7 +196,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           context?: string;
-          stay_id?: string | null;
+          hotel_id?: string | null;
         };
         Update: {
           id?: string;
@@ -206,11 +213,11 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           context?: string;
-          stay_id?: string | null;
+          hotel_id?: string | null;
         };
         Relationships: [
+          { foreignKeyName: "import_items_hotel_id_fkey"; columns: ["hotel_id"]; isOneToOne: false; referencedRelation: "hotels"; referencedColumns: ["id"] },
           { foreignKeyName: "import_items_import_batch_id_fkey"; columns: ["import_batch_id"]; isOneToOne: false; referencedRelation: "import_batches"; referencedColumns: ["id"] },
-          { foreignKeyName: "import_items_stay_id_fkey"; columns: ["stay_id"]; isOneToOne: false; referencedRelation: "stays"; referencedColumns: ["id"] },
         ];
       };
       locations: {
@@ -279,7 +286,6 @@ export type Database = {
           editorial_order: number | null;
           trip_id: string | null;
           location_id: string | null;
-          stay_id: string | null;
           import_batch_id: string | null;
           processing_status: string;
           captured_at: string | null;
@@ -296,6 +302,7 @@ export type Database = {
           created_at: string;
           updated_at: string;
           derivative_profile: number;
+          hotel_id: string | null;
         };
         Insert: {
           id?: string;
@@ -314,7 +321,6 @@ export type Database = {
           editorial_order?: number | null;
           trip_id?: string | null;
           location_id?: string | null;
-          stay_id?: string | null;
           import_batch_id?: string | null;
           processing_status?: string;
           captured_at?: string | null;
@@ -331,6 +337,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           derivative_profile?: number;
+          hotel_id?: string | null;
         };
         Update: {
           id?: string;
@@ -349,7 +356,6 @@ export type Database = {
           editorial_order?: number | null;
           trip_id?: string | null;
           location_id?: string | null;
-          stay_id?: string | null;
           import_batch_id?: string | null;
           processing_status?: string;
           captured_at?: string | null;
@@ -366,12 +372,13 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           derivative_profile?: number;
+          hotel_id?: string | null;
         };
         Relationships: [
           { foreignKeyName: "photo_trip_location_membership"; columns: ["trip_id","location_id"]; isOneToOne: false; referencedRelation: "trip_locations"; referencedColumns: ["trip_id","location_id"] },
+          { foreignKeyName: "photos_hotel_id_fkey"; columns: ["hotel_id"]; isOneToOne: false; referencedRelation: "hotels"; referencedColumns: ["id"] },
           { foreignKeyName: "photos_import_batch_id_fkey"; columns: ["import_batch_id"]; isOneToOne: false; referencedRelation: "import_batches"; referencedColumns: ["id"] },
           { foreignKeyName: "photos_location_id_fkey"; columns: ["location_id"]; isOneToOne: false; referencedRelation: "locations"; referencedColumns: ["id"] },
-          { foreignKeyName: "photos_stay_id_fkey"; columns: ["stay_id"]; isOneToOne: false; referencedRelation: "stays"; referencedColumns: ["id"] },
           { foreignKeyName: "photos_trip_id_fkey"; columns: ["trip_id"]; isOneToOne: false; referencedRelation: "trips"; referencedColumns: ["id"] },
         ];
       };
@@ -382,10 +389,6 @@ export type Database = {
           trip_id: string | null;
           check_in: string | null;
           check_out: string | null;
-          room_type: string | null;
-          purpose: string | null;
-          rating: number | null;
-          review_text: string | null;
           internal_notes: string | null;
           status: string;
           editorial_order: number | null;
@@ -398,10 +401,6 @@ export type Database = {
           trip_id?: string | null;
           check_in?: string | null;
           check_out?: string | null;
-          room_type?: string | null;
-          purpose?: string | null;
-          rating?: number | null;
-          review_text?: string | null;
           internal_notes?: string | null;
           status?: string;
           editorial_order?: number | null;
@@ -414,10 +413,6 @@ export type Database = {
           trip_id?: string | null;
           check_in?: string | null;
           check_out?: string | null;
-          room_type?: string | null;
-          purpose?: string | null;
-          rating?: number | null;
-          review_text?: string | null;
           internal_notes?: string | null;
           status?: string;
           editorial_order?: number | null;
@@ -537,7 +532,7 @@ export type Database = {
       admin_mark_photo_upload: { Args: { p_id: string | null; p_token: string | null; p_multipart_id: string | null; }; Returns: undefined };
       admin_remove_trip_city: { Args: { p_trip_id: string | null; p_city_id: string | null; }; Returns: undefined };
       admin_remove_trip_location: { Args: { p_trip_id: string | null; p_location_id: string | null; }; Returns: undefined };
-      admin_reserve_context_photo_import: { Args: { p_id: string | null; p_batch_id: string | null; p_filename: string | null; p_hash: string | null; p_size: number | null; p_classification: string | null; p_context: string | null; p_stay_id?: string | null; }; Returns: string };
+      admin_reserve_context_photo_import: { Args: { p_id: string | null; p_batch_id: string | null; p_filename: string | null; p_hash: string | null; p_size: number | null; p_classification: string | null; p_context: string | null; p_hotel_id?: string | null; }; Returns: string };
       admin_reserve_photo_import: { Args: { p_id: string | null; p_batch_id: string | null; p_filename: string | null; p_hash: string | null; p_size: number | null; p_classification: string | null; }; Returns: string };
       admin_save_hotel: { Args: { p_id: string | null; p_record: Json | null; }; Returns: string };
       admin_save_location: { Args: { p_id: string | null; p_city_id: string | null; p_name: string | null; p_slug: string | null; p_latitude?: number | null; p_longitude?: number | null; p_description?: string | null; p_status?: string | null; p_editorial_order?: number | null; p_trip_id?: string | null; }; Returns: string };
@@ -546,6 +541,7 @@ export type Database = {
       admin_set_trip_location: { Args: { p_trip_id: string | null; p_location_id: string | null; p_sequence?: number | null; p_visited_at?: string | null; }; Returns: undefined };
       city_is_singapore: { Args: { p_city_id: string | null; }; Returns: boolean };
       is_admin: { Args: Record<string, never>; Returns: boolean };
+      public_archive_covers: { Args: { p_parent_ids: string[] | null; p_kind: string | null; }; Returns: { parent_id: string; photo_id: string }[] };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

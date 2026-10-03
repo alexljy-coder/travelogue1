@@ -13,7 +13,7 @@ import { redirect } from 'next/navigation';
 
 export async function savePhoto(id: string, _previous: FormState, form: FormData): Promise<FormState> {
   const { client } = await requireAdmin();
-  const values = valuesFor(form, ['context','stay_id','classification','status','featured','trip_id','location_id','caption','description','editorial_order']);
+  const values = valuesFor(form, ['context','hotel_id','classification','status','featured','trip_id','location_id','caption','description','editorial_order']);
   if (!uuidSchema.safeParse(id).success) return { error: 'Invalid Photo identifier.', values };
   const result = photoEditSchema.safeParse(values);
   if (!result.success) return validationState(values, result.error.issues);
@@ -43,14 +43,10 @@ export async function savePhoto(id: string, _previous: FormState, form: FormData
     parents.tripLocationAssociated = !!data;
     if (!data) return { error: 'Add this Location to the selected Trip first, or leave the assignment incomplete as Draft.', values };
   }
-  if(record.stay_id) {
-    const {data:stay,error} = await client.from('stays').select('id,status,trip_id,hotel_id').eq('id',record.stay_id).maybeSingle();
-    if(error || !stay) return {error:'Unable to verify the selected Stay.',values};
-    const [trip,hotel] = await Promise.all([stay.trip_id ? client.from('trips').select('status').eq('id',stay.trip_id).single() : Promise.resolve({data:null,error:null}),client.from('hotels').select('status,city_id').eq('id',stay.hotel_id).single()]);
-    if(trip.error || hotel.error) return {error:'Unable to verify Stay parents.',values};
-    const home = await client.rpc('city_is_singapore',{p_city_id:hotel.data.city_id});
-    if(home.error) return {error:'Unable to verify Hotel geography.',values};
-    parents.stay={id:stay.id,status:stay.status as PublicationStatus,trip_status:trip.data?.status as PublicationStatus ?? null,hotel_status:hotel.data.status as PublicationStatus,country_code:home.data?'SG':undefined};
+  if (record.hotel_id) {
+    const {data,error} = await client.from('hotels').select('id,status').eq('id',record.hotel_id).maybeSingle();
+    if(error || !data) return {error:'Unable to verify the selected Hotel.',values};
+    parents.hotel={id:data.id,status:data.status as PublicationStatus};
   }
   const errors = photoPublicationErrors({ ...photo, ...record, context: record.context, processing_status: 'ready' }, parents);
   if (errors.length) return { error: errors.join(' '), values };

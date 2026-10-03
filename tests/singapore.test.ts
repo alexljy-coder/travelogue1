@@ -6,7 +6,7 @@ import sharp from 'sharp';
 import { createTestDatabase, asRole } from './database';
 import { createAnonymousClient } from './public-client';
 import { singaporePhotos, singaporeOpening, singaporePlaces } from '../src/lib/data/public-singapore';
-import { relatedStays, stayPresentation } from '../src/lib/data/public-stays';
+import { relatedStays } from '../src/lib/data/public-stays';
 import { orderedPhotos, queryPhoto } from '../src/lib/data/public-photos';
 import { photoPublicationErrors } from '../src/lib/validation/publishing';
 import { processJpeg } from '../src/lib/photos/image';
@@ -43,7 +43,7 @@ test('overseas trip-less publication is rejected by actual database and prefligh
  const db=await fixture(false);try{
  await assert.rejects(asRole(db,'authenticated',admin,()=>db.query('update public.photos set trip_id=null where id=$1',[photo])),/Trip is required/);
  await assert.rejects(asRole(db,'authenticated',admin,()=>db.query('update public.stays set trip_id=null where id=$1',[stay])),/Trip is required/);
- const p={status:'published',classification:'nice',context:'travel',processing_status:'ready',featured:false,trip_id:null,location_id:location,stay_id:null} as const;
+ const p={status:'published',classification:'nice',context:'travel',processing_status:'ready',featured:false,trip_id:null,location_id:location,hotel_id:null} as const;
  assert.deepEqual(photoPublicationErrors(p,{location:{id:location,status:'published',country_code:'SG'}}),[]);
  assert.ok(photoPublicationErrors(p,{location:{id:location,status:'published',country_code:'JP'}}).length);
  }finally{await db.close();}
@@ -62,7 +62,6 @@ test('Singapore Hotel stays can omit Trip; Hotel photography stays separate and 
  assert.ok(photos.every(p=>p.context==='travel'));
  const hotelPhoto=await queryPhoto(client,'70000000-0000-4000-8000-000000000003');assert.ok(hotelPhoto);assert.equal(hotelPhoto.place.trip_slug,null);
  const visits=await relatedStays(client,'hotel_id',hotel);assert.equal(visits.stays[0].trip,null);
- assert.equal((await stayPresentation(client,visits.stays[0],{photos:1,record:1})).trip,null);
  await asRole(db,'anon',null,async()=>{await assert.rejects(db.query('select internal_notes from public.stays'));await assert.rejects(db.query('select latitude,longitude from public.photos'));});
  await db.query("update public.hotels set status='draft' where id=$1",[hotel]);
  assert.equal(await queryPhoto(client,'70000000-0000-4000-8000-000000000003'),null);

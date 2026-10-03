@@ -8,7 +8,7 @@ function refresh() { for (const path of ['/admin/hotels', '/admin/stays', '/admi
     revalidatePath(path, 'layout'); }
 export async function saveHotel(id: string | null, _previous: FormState, form: FormData): Promise<FormState> {
     const { client } = await requireAdmin();
-    const values = valuesFor(form, ['name', 'slug', 'city_id', 'brand', 'address', 'latitude', 'longitude', 'description', 'rating', 'recommended_family', 'recommended_business', 'recommended_leisure', 'status', 'editorial_order']);
+    const values = valuesFor(form, ['name', 'slug', 'city_id', 'brand', 'address', 'latitude', 'longitude', 'description', 'review_text', 'cover_photo_id', 'rating', 'recommended_family', 'recommended_business', 'recommended_leisure', 'status', 'editorial_order']);
     if (id && !uuidSchema.safeParse(id).success)
         return { error: 'Invalid Hotel identifier.', values };
     values.slug ||= slugify(values.name);
@@ -25,7 +25,7 @@ export async function saveHotel(id: string | null, _previous: FormState, form: F
 }
 export async function saveStay(id: string | null, _previous: FormState, form: FormData): Promise<FormState> {
     const { client } = await requireAdmin();
-    const values = valuesFor(form, ['hotel_id', 'trip_id', 'check_in', 'check_out', 'room_type', 'purpose', 'rating', 'review_text', 'internal_notes', 'status', 'editorial_order']);
+    const values = valuesFor(form, ['hotel_id', 'trip_id', 'check_in', 'check_out', 'internal_notes', 'status', 'editorial_order']);
     if (id && !uuidSchema.safeParse(id).success)
         return { error: 'Invalid Stay identifier.', values };
     const result = staySchema.safeParse(values);

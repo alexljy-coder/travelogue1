@@ -7,7 +7,7 @@ import { createPublicClient } from '@/lib/supabase/public';
 import { pageNumber, validSlug } from '@/lib/data/public-places';
 import { JourneyOpening, SectionPages } from '@/components/public/journey';
 import { PhotoGrid } from '@/components/public/photograph';
-import { HotelEditorial, StayLinks } from '@/components/public/stay';
+import { HotelEditorial, HotelReview, StayLinks } from '@/components/public/stay';
 async function visibleHotel(slug: string) { if (!validSlug(slug))
     notFound(); const hotel = await getHotel(slug); if (!hotel)
     notFound(); return hotel; }
@@ -23,15 +23,18 @@ export default async function Page({ params, searchParams }: {
     searchParams: Promise<{
         stays?: string;
         photos?: string;
+        record?: string;
     }>;
 }) {
     const hotel = await visibleHotel((await params).hotelSlug);
     const values = await searchParams;
     const page = pageNumber(values.stays);
     const photoPage = pageNumber(values.photos);
-    const { city, cover, stays, nice } = await hotelPresentation(createPublicClient(), hotel, { stays: page, photos: photoPage });
+    const { city, cover, stays, nice, record } = await hotelPresentation(createPublicClient(), hotel, { stays: page, photos: photoPage, record:pageNumber(values.record) });
     return <main id="archive-content" className="archive-main journey-detail"><Link className="archive-back" href="/stays">← Stays</Link><header className="journey-heading"><h1>{hotel.name}</h1>{city && <p className="journey-geography">{[city.name, city.country].filter(Boolean).join(', ')}</p>}{hotel.brand && <p className="stay-editorial">{hotel.brand}</p>}<HotelEditorial hotel={hotel}/></header>
-    {cover && <JourneyOpening photo={cover}/>} {hotel.description && <p className="journey-description">{hotel.description}</p>}{hotel.address && <p className="stay-editorial">{hotel.address}</p>}
+    {cover && <JourneyOpening photo={cover}/>} {hotel.description && <p className="journey-description">{hotel.description}</p>}<HotelReview text={hotel.review_text}/>{hotel.address && <p className="stay-editorial">{hotel.address}</p>}
     {(nice.photos.length > 0 || photoPage > 1) && <section className="journey-section" id="photos"><h2>Photography</h2><PhotoGrid photos={nice.photos}/>{!nice.photos.length && <p>No more photographs.</p>}<SectionPages base={`/stays/${hotel.slug}`} values={values} name="photos" page={photoPage} hasNext={nice.hasNext}/></section>}
-    <section className="journey-section" id="stays"><h2>My Stays</h2>{stays.stays.length ? <StayLinks stays={stays.stays}/> : <p>No published Stays on this page.</p>}<SectionPages base={`/stays/${hotel.slug}`} values={values} name="stays" page={page} hasNext={stays.hasNext}/><p className="stay-editorial">Visit a Stay for its photographs and review, where recorded.</p></section></main>;
+    <section className="journey-section" id="stays"><h2>Stayed</h2>{stays.stays.length ? <StayLinks stays={stays.stays}/> : <p>No published Stays on this page.</p>}<SectionPages base={`/stays/${hotel.slug}`} values={values} name="stays" page={page} hasNext={stays.hasNext}/></section>
+    {(record.photos.length > 0 || pageNumber(values.record)>1) && <section className="journey-section journey-record" id="record"><h2>The Record</h2><PhotoGrid photos={record.photos}/><SectionPages base={`/stays/${hotel.slug}`} values={values} name="record" page={pageNumber(values.record)} hasNext={record.hasNext}/></section>}
+    </main>;
 }

@@ -51,14 +51,13 @@ const optionalRating = optionalNumber.pipe(z.number().int('Use whole stars only.
 const flag = z.enum(['', 'yes']).transform(value => value === 'yes');
 export const hotelSchema = z.object({
   name, slug, city_id: uuidSchema, ...coordinates, brand: optionalText, address: optionalText,
-  description: optionalText, rating: optionalRating,
+  description: optionalText, review_text: optionalText, cover_photo_id: z.union([uuidSchema,z.literal('')]).transform(value=>value||null), rating: optionalRating,
   recommended_family: flag, recommended_business: flag, recommended_leisure: flag,
   status: z.enum(['draft','published']), editorial_order: optionalPosition,
 }).superRefine(pairedCoordinates);
 export const staySchema = z.object({
   hotel_id: uuidSchema, trip_id: z.union([uuidSchema,z.literal('')]).transform(value=>value||null), check_in: optionalDate, check_out: optionalDate,
-  room_type: optionalText, purpose: z.enum(['','business','leisure','family','mixed']).transform(value => value || null),
-  rating: optionalRating, review_text: optionalText, internal_notes: optionalText,
+  internal_notes: optionalText,
   status: z.enum(['draft','published']), editorial_order: optionalPosition,
 }).superRefine((data,ctx) => {
   if(data.check_in && data.check_out && data.check_out < data.check_in) ctx.addIssue({code:'custom',path:['check_out'],message:'Check-out cannot precede check-in.'});

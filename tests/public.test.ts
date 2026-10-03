@@ -41,7 +41,7 @@ test('public detail: Published record with real geography; Draft, missing and un
   assert.equal(await queryPhoto(client, 'not-uuid'), null);
   await db.exec("update public.trips set status='draft' where slug='published-trip'");
   assert.equal(await queryPhoto(client, id(1)), null);
-  assert.equal(await queryPhoto(client, id(3)), null);
+  assert.ok(await queryPhoto(client, id(3)));
 });
 test('Nice default and explicit Record selections do not mix; empty archive is valid', async () => {
   const client = publicClient();
@@ -101,11 +101,11 @@ test('public dependency failures fail closed and never return provider secrets',
   assert.equal(missing.status, 404);
 });
 
-test('Hotel derivative delivery requires the actual public Stay, Hotel and Trip on every read',async()=>{
+test('Hotel derivative delivery requires the actual public Hotel on every read',async()=>{
   const client=createAnonymousClient(db);let reads=0;
   const dependencies={visible:async(photoId:string)=>{const result=await client.from('photos').select('id').eq('id',photoId).maybeSingle();if(result.error)throw result.error;return !!result.data;},media:async()=>{reads++;return{body:new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode('HOTEL WEBP'));controller.close();}}),contentType:'image/webp'};},missing:()=>false};
   assert.equal((await deliverPublicImage(id(3),'large',dependencies)).status,200);
-  for(const [table,parent]of [['stays','60000000-0000-4000-8000-000000000001'],['hotels','50000000-0000-4000-8000-000000000001'],['trips','30000000-0000-4000-8000-000000000001']]){
+  for(const [table,parent]of [['hotels','50000000-0000-4000-8000-000000000001']]){
     await db.query(`update public.${table} set status='draft' where id=$1`,[parent]);assert.equal((await deliverPublicImage(id(3),'large',dependencies)).status,404);assert.equal(reads,1);
     await db.query(`update public.${table} set status='published' where id=$1`,[parent]);
   }

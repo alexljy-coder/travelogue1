@@ -15,7 +15,7 @@ export function createImportRepository(client: AdminClient): ImportRepository {
   }
   return {
     async reserve(input) {
-      const id = await rpc(client.rpc('admin_reserve_context_photo_import', { p_id: input.id, p_batch_id: input.batch_id, p_filename: input.filename, p_hash: input.file_hash, p_size: input.file_size, p_classification: input.classification, p_context: input.context ?? 'travel', p_stay_id: input.stay_id ?? null }));
+      const id = await rpc(client.rpc('admin_reserve_context_photo_import', { p_id: input.id, p_batch_id: input.batch_id, p_filename: input.filename, p_hash: input.file_hash, p_size: input.file_size, p_classification: input.classification, p_context: input.context ?? 'travel', p_hotel_id: input.hotel_id ?? null }));
       if (!id) throw new PhotoWorkflowError('Unable to reserve import.');
       return id;
     },

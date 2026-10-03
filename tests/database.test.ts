@@ -115,7 +115,7 @@ test('identity accepts only one administrator and is not publicly editable', asy
 test('unpublishing Trip hides Travel and Hotel children without changing their states', async () => {
   await owner(async () => { await db.query("update public.trips set status='draft' where id=$1", [trip]); });
   await anon(async () => {
-    assert.equal((await db.query('select id from public.photos')).rows.length, 0);
+    assert.equal((await db.query('select id from public.photos')).rows.length, 1);
     assert.equal((await db.query('select id from public.stays')).rows.length, 0);
     assert.equal((await db.query('select trip_id from public.trip_locations')).rows.length, 0);
   });
@@ -123,7 +123,7 @@ test('unpublishing Trip hides Travel and Hotel children without changing their s
 });
 
 test('unpublishing Hotel, Stay or Location hides the corresponding photos', async () => {
-  for (const [table, id, expected] of [['hotels',hotel,2],['stays',stay,2],['locations',location,1]] as const) {
+  for (const [table, id, expected] of [['hotels',hotel,2],['stays',stay,3],['locations',location,1]] as const) {
     await db.query(`update public.${table} set status='draft' where id=$1`, [id]);
     await anon(async () => assert.equal((await db.query('select id from public.photos')).rows.length, expected));
     await db.query(`update public.${table} set status='published' where id=$1`, [id]);
@@ -143,17 +143,16 @@ test('Stays require Hotel and Trip; repeat Stays and optional reviews are allowe
   await assert.rejects(db.query('update public.stays set hotel_id=null where id=$1',[stay]), errorCode('23502'));
   await db.query('insert into public.stays(hotel_id,trip_id) values ($1,$2)', [hotel,trip]);
   assert.equal((await db.query('select id from public.stays where hotel_id=$1 and trip_id=$2', [hotel,trip])).rows.length, 3);
-  await assert.rejects(db.query("update public.stays set purpose='photography' where id=$1", [stay]), errorCode('23514'));
   await db.query("update public.trips set purpose='photography' where id=$1", [trip]);
-  for (const rating of [0,6]) await assert.rejects(db.query('update public.stays set rating=$1 where id=$2',[rating,stay]), errorCode('23514'));
+  for (const rating of [0,6]) await assert.rejects(db.query('update public.hotels set rating=$1 where id=$2',[rating,hotel]), errorCode('23514'));
 });
 
 test('published photo assignments/readiness and mutually exclusive contexts are enforced', async () => {
   await assert.rejects(db.query('update public.photos set trip_id=null where id=$1',[photo]), errorCode('23514'));
   await assert.rejects(db.query('update public.photos set location_id=null where id=$1',[photo]), errorCode('23514'));
-  await assert.rejects(db.query('update public.photos set stay_id=$1 where id=$2',[stay,photo]), errorCode('23514'));
+  await assert.rejects(db.query('update public.photos set hotel_id=$1 where id=$2',[hotel,photo]), errorCode('23514'));
   await assert.rejects(db.query("update public.photos set processing_status='pending' where id=$1",[photo]), errorCode('23514'));
-  await assert.rejects(db.query("update public.photos set stay_id=null where id='70000000-0000-4000-8000-000000000003'"), errorCode('23514'));
+  await assert.rejects(db.query("update public.photos set hotel_id=null where id='70000000-0000-4000-8000-000000000003'"), errorCode('23514'));
   await assert.rejects(db.query("update public.photos set trip_id=$1 where id='70000000-0000-4000-8000-000000000003'",[trip]), errorCode('23514'));
   await db.query("update public.photos set context='hotel' where id='70000000-0000-4000-8000-000000000008'");
 });

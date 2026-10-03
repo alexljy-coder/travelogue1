@@ -31,11 +31,11 @@ const id = z.uuid();
 export const batchSchema = z.object({ id, source_name: z.string().trim().max(200), total: z.number().int().min(1).max(10000), eligible: z.number().int().min(1).max(MAX_BATCH), skipped: z.number().int().min(0) }).refine((data) => data.total >= data.eligible + data.skipped);
 export const prepareSchema = z.object({
   id, batch_id: id, filename: z.string().trim().min(1).max(255).refine((name) => !/[\\/\u0000-\u001f]/.test(name)),
-  context: z.enum(['travel','hotel']).default('travel'), stay_id: z.uuid().nullable().default(null),
+  context: z.enum(['travel','hotel']).default('travel'), hotel_id: z.uuid().nullable().default(null),
   path: z.string().max(2000), classification: z.enum(['nice', 'record']),
   file_hash: z.string().regex(/^[a-f0-9]{64}$/), file_size: z.number().int().min(1).max(MAX_SOURCE_BYTES),
 }).superRefine((data, ctx) => {
-  if(data.context==='travel' && data.stay_id) ctx.addIssue({code:'custom',path:['stay_id'],message:'Travel photos cannot reference a Stay.'});
+  if(data.context==='travel' && data.hotel_id) ctx.addIssue({code:'custom',path:['hotel_id'],message:'Travel photos cannot reference a Hotel.'});
   const result = classifyPath(data.path, data.classification);
   if (result !== data.classification) ctx.addIssue({ code: 'custom', path: ['classification'], message: 'Personal or ambiguous folder paths cannot be uploaded.' });
   if (!/\.jpe?g$/i.test(data.filename)) ctx.addIssue({ code: 'custom', path: ['filename'], message: 'Select Lightroom-exported JPEGs only.' });

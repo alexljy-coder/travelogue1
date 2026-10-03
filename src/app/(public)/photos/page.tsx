@@ -12,7 +12,7 @@ export default async function PhotosPage({ searchParams }: { searchParams: Promi
   const pageUrl = (number: number) => `/photos?${classification === 'record' ? 'view=record&' : ''}page=${number}`;
   return <main id="archive-content" className="archive-main"><div className="archive-page-heading"><h1>Photos</h1><nav className="archive-views" aria-label="Photography selection"><Link href="/photos" aria-current={classification === 'nice' ? 'page' : undefined}>Nice</Link><Link href="/photos?view=record" aria-current={classification === 'record' ? 'page' : undefined}>Record</Link></nav></div>
     {classification === 'record' && <p className="archive-intro">Photographs kept as a record of places and journeys.</p>}
-    {photos.length ? <PhotoGrid photos={photos} /> : <div className="archive-empty"><p>{unavailable ? 'Photographs are temporarily unavailable. Please try again later.' : page > 1 ? 'No more photographs in this selection.' : `No published ${classification === 'record' ? 'Record' : 'Nice'} photographs yet.`}</p></div>}
+    {photos.length ? <PhotoGrid priority photos={photos} /> : <div className="archive-empty"><p>{unavailable ? 'Photographs are temporarily unavailable. Please try again later.' : page > 1 ? 'No more photographs in this selection.' : `No published ${classification === 'record' ? 'Record' : 'Nice'} photographs yet.`}</p></div>}
     {(page > 1 || hasNext) && <nav className="archive-pagination" aria-label="Gallery pages">{page > 1 && <Link href={pageUrl(page - 1)}>Previous page</Link>}{hasNext && <Link href={pageUrl(page + 1)}>Next page</Link>}</nav>}
   </main>;
 }

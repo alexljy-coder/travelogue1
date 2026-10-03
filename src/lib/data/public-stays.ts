@@ -1,13 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
-import { attachContexts, orderedPhotos, PAGE_SIZE, isPhotoId, photoProjection } from './public-photos';
-import { geography, tripProjection, validSlug } from './public-places';
+import { attachContexts, orderedPhotos, PAGE_SIZE, isPhotoId, indexCovers } from './public-photos';
+import { geography, validSlug } from './public-places';
 
 type Client = SupabaseClient<Database>;
-export const hotelProjection = 'id,name,slug,brand,city_id,address,description,rating,recommended_family,recommended_business,recommended_leisure' as const;
-export const stayProjection = 'id,hotel_id,trip_id,check_in,check_out,room_type,purpose,rating,review_text' as const;
-export type PublicHotel = Pick<Database['public']['Tables']['hotels']['Row'], 'id' | 'name' | 'slug' | 'brand' | 'city_id' | 'address' | 'description' | 'rating' | 'recommended_family' | 'recommended_business' | 'recommended_leisure'>;
-export type PublicStay = Pick<Database['public']['Tables']['stays']['Row'], 'id' | 'hotel_id' | 'trip_id' | 'check_in' | 'check_out' | 'room_type' | 'purpose' | 'rating' | 'review_text'>;
+export const hotelProjection = 'id,name,slug,brand,city_id,address,description,review_text,cover_photo_id,rating,recommended_family,recommended_business,recommended_leisure' as const;
+export const hotelSummaryProjection='id,name,slug,brand,city_id,rating,recommended_family,recommended_business,recommended_leisure,cover_photo_id' as const;
+export const stayProjection = 'id,hotel_id,trip_id,check_in,check_out' as const;
+export type PublicHotel = Pick<Database['public']['Tables']['hotels']['Row'], 'id' | 'name' | 'slug' | 'brand' | 'city_id' | 'address' | 'description' | 'review_text' | 'cover_photo_id' | 'rating' | 'recommended_family' | 'recommended_business' | 'recommended_leisure'>;
+export type PublicStay = Pick<Database['public']['Tables']['stays']['Row'], 'id' | 'hotel_id' | 'trip_id' | 'check_in' | 'check_out'>;
 
 function checked<T>(result: { data: T | null; error: unknown }): T {
   if (result.error || result.data === null) throw new Error('Public Stays unavailable.');
@@ -47,67 +48,38 @@ export async function relatedStays(client: Client, key: 'hotel_id' | 'trip_id', 
     hasNext: rows.length > PAGE_SIZE,
   };
 }
-export async function stayPhotos(client: Client, id: string, classification: 'nice' | 'record', page = 1, exclude?: string) {
-  let query = orderedPhotos(client).eq('context', 'hotel').eq('stay_id', id).eq('classification', classification);
-  if (exclude) query = query.neq('id', exclude);
-  const rows = checked(await query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
-  return { photos: await attachContexts(client, rows.slice(0, PAGE_SIZE)), hasNext: rows.length > PAGE_SIZE };
+export async function hotelPhotos(client: Client, hotelId: string, page = 1, exclude?: string, classification: 'nice' | 'record' = 'nice') {
+  let query=orderedPhotos(client).eq('context','hotel').eq('hotel_id',hotelId).eq('classification',classification);
+  if(exclude) query=query.neq('id',exclude);
+  const rows=checked(await query.range((page-1)*PAGE_SIZE,page*PAGE_SIZE));
+  return {photos:await attachContexts(client,rows.slice(0,PAGE_SIZE)),hasNext:rows.length>PAGE_SIZE};
 }
-// The existing FK lets PostgREST join Stay under anonymous RLS; no unbounded Stay-ID list.
-function orderedHotelPhotos(client: Client, hotelId: string) {
-  return client.from('photos').select(`${photoProjection},stays!inner(hotel_id)`)
-    .eq('status', 'published').eq('context', 'hotel').eq('classification', 'nice').eq('stays.hotel_id', hotelId)
-    .order('editorial_order', { nullsFirst: false }).order('captured_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false }).order('id');
-}
-export async function hotelPhotos(client: Client, hotelId: string, page = 1, exclude?: string) {
-  let query = orderedHotelPhotos(client, hotelId);
-  if (exclude) query = query.neq('id', exclude);
-  const rows = checked(await query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
-  const photos = rows.slice(0, PAGE_SIZE).map(({ stays, ...photo }) => { void stays; return photo; });
-  return { photos: await attachContexts(client, photos), hasNext: rows.length > PAGE_SIZE };
-}
-export async function stayCover(client: Client, id: string) {
-  const rows = checked(await orderedPhotos(client).eq('context', 'hotel').eq('stay_id', id).eq('classification', 'nice').limit(1));
-  return rows.length ? (await attachContexts(client, rows))[0] : null;
-}
-async function hotelCoverCandidate(client: Client, id: string) {
-  const rows = checked(await orderedHotelPhotos(client, id).limit(1));
-  if (!rows.length) return null;
-  const { stays, ...photo } = rows[0];
-  void stays;
-  return photo;
-}
-export async function hotelCover(client: Client, id: string) {
-  const photo = await hotelCoverCandidate(client, id);
-  return photo ? (await attachContexts(client, [photo]))[0] : null;
+export async function hotelCover(client: Client, id: string, coverId?: string | null) {
+  if(coverId === undefined) {
+    const result=await client.from('hotels').select('cover_photo_id').eq('id',id).maybeSingle();
+    if(result.error) throw new Error('Hotel cover unavailable.');
+    coverId=result.data?.cover_photo_id;
+  }
+  if(coverId) {
+    const rows=checked(await orderedPhotos(client).eq('id',coverId).eq('hotel_id',id).eq('context','hotel').eq('classification','nice').limit(1));
+    if(rows.length) return (await attachContexts(client,rows))[0];
+  }
+  const rows=checked(await orderedPhotos(client).eq('hotel_id',id).eq('context','hotel').eq('classification','nice').limit(1));
+  return rows.length ? (await attachContexts(client,rows))[0] : null;
 }
 export async function queryHotelIndex(client: Client, page = 1) {
-  const rows = checked(await client.from('hotels').select(hotelProjection).eq('status', 'published')
-    .order('editorial_order', { nullsFirst: false }).order('name').order('id').range((page - 1) * 12, page * 12));
-  const selected = rows.slice(0, 12);
-  const cities = await geography(client, selected.map(hotel => hotel.city_id));
-  const candidates: Awaited<ReturnType<typeof hotelCoverCandidate>>[] = [];
-  for (let index = 0; index < selected.length; index += 3) {
-    candidates.push(...await Promise.all(selected.slice(index, index + 3).map(hotel => hotelCoverCandidate(client, hotel.id))));
-  }
-  const covers = await attachContexts(client, candidates.filter(photo => photo !== null));
-  const hotels = selected.map((hotel, index) => ({ ...hotel, city: cities.find(city => city.id === hotel.city_id) ?? null, cover: covers.find(photo => photo.id === candidates[index]?.id) ?? null }));
-  return { hotels, hasNext: rows.length > 12 };
+  const rows=checked(await client.from('hotels').select(hotelSummaryProjection).eq('status','published')
+    .order('editorial_order',{nullsFirst:false}).order('name').order('id').range((page-1)*12,page*12));
+  const selected=rows.slice(0,12);
+  const [cities,covers]=await Promise.all([geography(client,selected.map(h=>h.city_id)),indexCovers(client,selected.map(h=>h.id),'hotel')]);
+  return {hotels:selected.map(hotel=>({...hotel,city:cities.find(c=>c.id===hotel.city_id)??null,cover:covers.find(c=>c.parent_id===hotel.id)?.cover??null})),hasNext:rows.length>12};
 }
-export async function hotelPresentation(client: Client, hotel: PublicHotel, pages: { stays: number; photos: number }) {
-  const cover = await hotelCover(client, hotel.id);
-  const [cities, stays, nice] = await Promise.all([
-    geography(client, [hotel.city_id]), relatedStays(client, 'hotel_id', hotel.id, pages.stays), hotelPhotos(client, hotel.id, pages.photos, cover?.id),
+export async function hotelPresentation(client: Client, hotel: PublicHotel, pages: { stays: number; photos: number; record?: number }) {
+  // Start independent geography/history/Record reads before the cover→Nice pagination dependency.
+  const [cities,stays,record,cover]=await Promise.all([
+    geography(client,[hotel.city_id]),relatedStays(client,'hotel_id',hotel.id,pages.stays),
+    hotelPhotos(client,hotel.id,pages.record??1,undefined,'record'),hotelCover(client,hotel.id,hotel.cover_photo_id),
   ]);
-  return { cover, city: cities[0] ?? null, stays, nice };
-}
-export async function stayPresentation(client: Client, stay: PublicStay, pages: { photos: number; record: number }) {
-  const cover = await stayCover(client, stay.id);
-  const [nice, record, trip] = await Promise.all([
-    stayPhotos(client, stay.id, 'nice', pages.photos, cover?.id), stayPhotos(client, stay.id, 'record', pages.record),
-    stay.trip_id ? client.from('trips').select(tripProjection).eq('id', stay.trip_id).maybeSingle() : Promise.resolve({data:null,error:null}),
-  ]);
-  if (trip.error) throw new Error('Public Stay context unavailable.');
-  return { cover, nice, record, trip: trip.data };
+  const nice=await hotelPhotos(client,hotel.id,pages.photos,cover?.id);
+  return {cover,city:cities[0]??null,stays,nice,record};
 }

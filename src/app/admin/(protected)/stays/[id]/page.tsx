@@ -15,13 +15,12 @@ export default async function Page({ params }: {
     const { id } = await params;
     if (!uuidSchema.safeParse(id).success)
         notFound();
-    const [record, catalog, photos, imports] = await Promise.all([client.from('stays').select('*').eq('id', id).maybeSingle(), getStayCatalog(client), client.from('photos').select('id,filename', { count: 'exact' }).eq('stay_id', id).order('id').limit(25), client.from('import_items').select('id', { count: 'exact', head: true }).eq('stay_id', id)]);
-    if (record.error || photos.error || imports.error)
+    const [record, catalog] = await Promise.all([client.from('stays').select('*').eq('id', id).maybeSingle(), getStayCatalog(client)]);
+    if (record.error)
         throw new Error('Unable to load Stay.');
     if (!record.data)
         notFound();
     const hotel = catalog.hotels.find(h => h.id === record.data!.hotel_id);
-    return <main><Link href="/admin/stays">Stays</Link><h1>Stay at {hotel?.name}</h1><p><Link href={`/admin/hotels/${record.data.hotel_id}`}>Hotel and recommendations</Link> {record.data.trip_id && <> · <Link href={`/admin/trips/${record.data.trip_id}`}>Trip</Link></>}</p><StayForm stay={record.data} {...catalog}/>
- <section className="content-section"><h2>Hotel photography</h2><Link href={`/admin/photos/import?stay=${id}`}>Import Hotel photos for this Stay</Link><p>Assign existing photos in <Link href="/admin/photos">Photos</Link>.</p><ul>{photos.data?.map(p => <li key={p.id}><Link href={`/admin/photos/${p.id}`}>{p.filename}</Link></li>)}</ul>{(photos.count ?? 0) > 25 && <p>Showing 25 photos. More are available in Photos.</p>}</section>
- <DeleteForm action={deleteStay.bind(null, id)} label="Delete Stay" explanation="Hotel, Trip and Cities are preserved. Photos and pending import assignments block deletion. Delete photos through the storage-aware Photo workflow first." blocked={(photos.count ?? 0) + (imports.count ?? 0) > 0 ? 'This Stay has Photos or import references. Resolve those before deletion, or keep it unpublished.' : undefined}/></main>;
+    return <main><Link href="/admin/stays">Stays</Link><h1>Stay at {hotel?.name}</h1><p><Link href={`/admin/hotels/${record.data.hotel_id}`}>Hotel review and photographs</Link> {record.data.trip_id && <> · <Link href={`/admin/trips/${record.data.trip_id}`}>Trip</Link></>}</p><StayForm stay={record.data} {...catalog}/>
+ <DeleteForm action={deleteStay.bind(null, id)} label="Delete Stay" explanation="Delete this visit only. Hotel, Trip and Hotel photography are preserved."/></main>;
 }

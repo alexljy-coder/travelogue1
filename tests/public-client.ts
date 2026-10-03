@@ -4,13 +4,26 @@ import type { PGlite } from '@electric-sql/pglite';
 import type { Database } from '../src/types/database';
 import { asRole } from './database';
 export function createAnonymousClient(db: PGlite, requests: string[] = []) {
-  let pending: Promise<unknown> = Promise.resolve();
   return createClient<Database>('https://fixture.supabase.co', 'anonymous-fixture-key', {
     auth: { persistSession: false, autoRefreshToken: false },
-    global: { fetch: async (input, init) => {
+    global: { fetch: createAnonymousFetch(db,requests) },
+  });
+}
+export function createAnonymousFetch(db: PGlite, requests: string[] = [], key = 'anonymous-fixture-key'): typeof fetch {
+  let pending: Promise<unknown> = Promise.resolve();
+  return async (input, init) => {
+
       const url = new URL(String(input));
-      assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer anonymous-fixture-key');
+      assert.equal(new Headers(init?.headers).get('authorization'), `Bearer ${key}`);
       const table = url.pathname.split('/').at(-1)!;
+      if(url.pathname.includes('/rpc/')) {
+        assert.equal(table,'public_archive_covers');
+        const args=JSON.parse(String(init?.body));requests.push('rpc:public_archive_covers');
+        const operation=pending.then(()=>asRole(db,'anon',null,async()=> (await db.query('select * from public.public_archive_covers($1::uuid[],$2)',[args.p_parent_ids,args.p_kind])).rows));
+        pending=operation.then(()=>undefined,()=>undefined);
+        return new Response(JSON.stringify(await operation),{headers:{'Content-Type':'application/json'}});
+      }
+
       assert.ok(['photos','locations','trips','cities','countries','trip_cities','trip_locations','hotels','stays'].includes(table));
       const rawSelect = url.searchParams.get('select')!;
       const hotelJoin=rawSelect.endsWith(',stays!inner(hotel_id)');
@@ -44,6 +57,5 @@ export function createAnonymousClient(db: PGlite, requests: string[] = []) {
       const rows = await operation;
       // supabase-js maybeSingle requests an array and normalizes zero/one rows.
       return new Response(JSON.stringify(rows), { headers: { 'Content-Type': 'application/json' } });
-    } },
-  });
+  };
 }

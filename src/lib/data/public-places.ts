@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
-import { attachContexts, orderedPhotos, PAGE_SIZE, type PhotoWithContext, type PublicPhoto } from './public-photos';
+import { attachContexts, orderedPhotos, PAGE_SIZE, type PhotoWithContext, type PublicPhoto, indexCovers } from './public-photos';
 type Client = SupabaseClient<Database>;
 export const tripProjection = 'id,title,slug,start_date,end_date,description,cover_photo_id,editorial_order,created_at' as const;
 export const locationProjection = 'id,name,slug,city_id,description,cover_photo_id' as const;
@@ -80,12 +80,8 @@ export async function queryTripIndex(client: Client, page=1) {
     const chunk=checked(await client.from('trip_cities').select('trip_id,city_id,sequence').in('trip_id',selected.map(t=>t.id)).order('sequence',{nullsFirst:false}).order('trip_id').order('city_id').range(offset,offset+199));
     joins.push(...chunk);if(chunk.length<200)break;
   }
-  const cities=await geography(client,joins.map(j=>j.city_id));
-  const candidates: (PublicPhoto|null)[]=[];
-  // At most three simultaneous cover lookups; never read every Trip photograph.
-  for(let i=0;i<selected.length;i+=3) candidates.push(...await Promise.all(selected.slice(i,i+3).map(t=>coverCandidate(client,'trip_id',t))));
-  const covers=await attachContexts(client,candidates.filter((p):p is PublicPhoto=>!!p));
-  const trips=selected.map((trip,index)=>({...trip,cities:joins.filter(j=>j.trip_id===trip.id).flatMap(j=>cities.filter(c=>c.id===j.city_id)),cover:covers.find(p=>p.id===candidates[index]?.id)??null}));
+  const [cities,covers]=await Promise.all([geography(client,joins.map(j=>j.city_id)),indexCovers(client,selected.map(t=>t.id),'trip')]);
+  const trips=selected.map(trip=>({...trip,cities:joins.filter(j=>j.trip_id===trip.id).flatMap(j=>cities.filter(c=>c.id===j.city_id)),cover:covers.find(row=>row.parent_id===trip.id)?.cover??null}));
   return {trips,hasNext:rows.length>TRIP_PAGE_SIZE};
 }
 export async function tripPlaces(client: Client, tripId: string, page=1) {

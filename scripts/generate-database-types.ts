@@ -39,13 +39,15 @@ for (const table of tables) {
   }
   output += '        ];\n      };\n';
 }
-type Routine = { name: string; names: string[] | null; types: string[]; defaults: number; returns: string };
+type Routine = { name: string; names: string[] | null; types: string[]; defaults: number; returns: string; out_names: string[]; out_types: string[] };
 const { rows: routines } = await db.query<Routine>(`select p.proname as name, p.proargnames as names,
   array(select format_type(t, null) from unnest(p.proargtypes::oid[]) t) as types,
-  p.pronargdefaults as defaults, format_type(p.prorettype, null) as returns
+  p.pronargdefaults as defaults, format_type(p.prorettype, null) as returns,
+  array(select p.proargnames[k] from generate_subscripts(p.proallargtypes,1) k where p.proargmodes[k] in ('o','t')) as out_names,
+  array(select format_type(p.proallargtypes[k],null) from generate_subscripts(p.proallargtypes,1) k where p.proargmodes[k] in ('o','t')) as out_types
   from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-  where n.nspname='public' and (p.proname in ('is_admin','city_is_singapore') or p.proname like 'admin_%') order by p.proname`);
-const routineType = (type: string) => type === 'void' ? 'undefined' : typeOf({ data_type: type, is_nullable: 'NO' } as Column);
+  where n.nspname='public' and (p.proname in ('is_admin','city_is_singapore','public_archive_covers') or p.proname like 'admin_%') order by p.proname`);
+const routineType = (type: string): string => type.endsWith('[]') ? `${routineType(type.slice(0,-2))}[]` : type === 'void' ? 'undefined' : typeOf({ data_type: type, is_nullable: 'NO' } as Column);
 output += '    };\n    Views: Record<string, never>;\n    Functions: {\n';
 for (const routine of routines) {
   output += `      ${routine.name}: { Args: `;
@@ -58,7 +60,7 @@ for (const routine of routines) {
     });
     output += '}';
   }
-  output += `; Returns: ${routineType(routine.returns)} };\n`;
+  output += `; Returns: ${routine.out_names.length ? `{ ${routine.out_names.map((name,index)=>`${name}: ${routineType(routine.out_types[index])}`).join('; ')} }[]` : routineType(routine.returns)} };\n`;
 }
 output += '    };\n    Enums: Record<string, never>;\n    CompositeTypes: Record<string, never>;\n  };\n};\n';
 await db.close();

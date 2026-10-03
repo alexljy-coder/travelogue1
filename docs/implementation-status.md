@@ -1,6 +1,6 @@
 # Implementation status
 
-Milestones 1–5 and hosted verification/acceptance are complete per the owner. Milestone 6 Hotels and Stays is implemented and locally verified on 2026-10-02; results are recorded below. Applying its new migration and deployment acceptance remain owner steps. Milestone 7 Found Along / archive refinement is also implemented and locally verified; its manual acceptance is recorded below. No hosted migration, Cloudflare change or remote content mutation was performed.
+Milestones 1–7 are complete and accepted per the owner. Milestone 7.1 Hotel/Stay consolidation is implemented and locally verified on 2026-10-03. Its new migration and hosted acceptance remain owner steps. No hosted migration, deployment, Cloudflare change or remote content mutation was performed. Historical milestone sections below record their original implementation; the M7.1 section supersedes the former Stay editorial/photo ownership model.
 
 ## Implemented
 
@@ -13,7 +13,7 @@ Milestones 1–5 and hosted verification/acceptance are complete per the owner. 
 - Parent-aware anonymous reads and column privacy; authenticated archive access requires the singleton administrator. Unrelated authenticated users receive zero rows and cannot mutate. Private identity cannot be browser-managed.
 - Typed publishing/cover eligibility preflight helpers for future photo/Stay workflows; Trip/Location status can now be edited in admin.
 - Generated Supabase-compatible table/relationship types from migrated PostgreSQL catalog and drift-check script.
-- 100 automated tests, including real embedded PostgreSQL RPCs/constraints/grants/RLS, Sharp JPEG/WebP/EXIF processing, authenticated API boundaries and fake-R2 failure/retry/deletion scenarios. No production bucket access.
+- 106 automated tests, including real embedded PostgreSQL RPCs/constraints/grants/RLS, Sharp JPEG/WebP/EXIF processing, authenticated API boundaries and fake-R2 failure/retry/deletion scenarios. No production bucket access.
 - Production-server smoke checks against the build's actual configuration, all admin route guards, private image/storage endpoints, unauthorized upload operations, cache/privacy headers, absent registration routes and public Photo/Trip/Location behavior. Missing configuration is separately covered by unit tests.
 - Exact dependency pins/lockfile, Node 24/pnpm tooling, lint/typecheck/build scripts, CI workflow and local Supabase config with signup disabled.
 - Setup guides explaining hosted Auth/migrations and private R2 credentials/CORS/controlled testing. .env.example contains empty variable names only; no real credentials committed.
@@ -46,25 +46,25 @@ Milestone 3 verification run on 2026-10-01:
 
 ## In Progress
 
-- Owner hosted acceptance of any pending Milestone 6 steps and the new Milestone 7 migration/refinements.
+- Owner application of the M7.1 migration, coordinated deployment and real-content hosted acceptance; see m71-acceptance.md.
 
 ## Not Started
 
 - Interactive Map remains deferred by the owner’s Milestone 7 brief; provider choice is still open.
-- Explicit cover selection and drag-and-drop ordering UI.
+- Trip/Location explicit cover selection and drag-and-drop ordering UI. Hotel cover selection is implemented.
 - Importer refinements, grouping/suggestions and broader browser/performance work. Re-import/replacement remains Phase 2.
 - Map, About, final visual design/branding, broader performance/accessibility work and final release checks.
 
 ## Known Issues
 
-- Embedded PostgreSQL uses test-only Auth objects; automated ingestion/security tests use fake R2, not destructive production access. Milestones 1–3 hosted verification are owner-reported. Milestone 4 browser/production checks read existing anonymous-visible hosted Photos/derivatives without remote writes. Milestone 4 is deployed/accepted per the owner; Milestone 5 is also deployed/accepted per the owner; Milestone 6 needs hosted acceptance.
-- All three existing migrations are applied per the owner. Milestones 4–5 add no migration or environment variables. Milestone 6 adds one unapplied hosted migration; run only that new file. Do not rerun/reset applied migrations.
+- Embedded PostgreSQL uses test-only Auth objects; automated ingestion/security tests use fake R2, not destructive production access. Milestones 1–3 hosted verification are owner-reported. Milestone 4 browser/production checks read existing anonymous-visible hosted Photos/derivatives without remote writes. Milestone 4 is deployed/accepted per the owner; Milestone 5 is also deployed/accepted per the owner; Milestones 6–7 are accepted per the owner; M7.1 hosted acceptance is pending.
+- M1–M7 migrations are applied per the owner. M7.1 adds only 20261003000100_hotel_archive_refinement.sql; review/apply it manually. Do not rerun/reset applied migrations.
 - Folder picker preserves paths where supported. Loose-file drag/drop requires explicit Nice/Record and Personal-exclusion confirmation; lost classification cannot be inferred. Recursive dropped-directory traversal is deferred. Exact-byte duplicates are reused, not replaced; different exports of the same image are not reconciled.
 - Current source limit: ten eligible JPEGs, 25 MiB/file and 80 megapixels; no 4000px restriction, sequential bounded processing. The initial Vercel import proof is owner-verified; future larger-volume CPU/memory/runtime capacity still needs measurement. Export quality/sharpening and untagged source profile are not retrospectively verifiable. No automatic orphan sweeper/background recovery is introduced; hard interruptions retain traceable state for manual cleanup after lease expiry.
 - Next's current lint dependencies require ESLint 9/TypeScript <6.1; ESLint 9.39.5 emits an upstream support/deprecation warning. Peer-compatible versions are pinned; review a compatible tooling upgrade when available. This is a development-tooling limitation, not a security bypass.
-- Cover relationship eligibility is application-level, with tested helpers but no live mutation workflow. Future admin cover selectors must enforce eligibility; implemented public Trip/Location cover queries resolve anonymous effective Photo visibility and exact context/identity.
+- Hotel cover selection now validates eligible ready Published Nice Hotel photos in the save RPC; public queries independently validate visibility/membership and fall back safely. Trip/Location selectors remain deferred.
 - Map/tile selection remains deferred. Public delivery intentionally has no shared cache; it checks visibility per image and streams through Vercel. A later traffic/cost optimization must preserve parent-aware withdrawal. Already authorized/in-flight/downloaded bytes cannot be recalled. No unresolved product conflict was found.
-- Canonical-domain/OG image configuration remains deferred. Hotel Photo detail now derives curated Hotel/City/Country geography through its Stay.
+- Canonical-domain/OG image configuration remains deferred. Hotel Photo detail now derives curated Hotel/City/Country geography directly from Hotel.
 - The local Turbopack persistence cache failed during preview startup. Responsive verification used `pnpm dev --webpack`; the established Webpack production build passed. Next dev generated AGENTS.md/CLAUDE.md with its version-specific documentation guidance.
 
 ## Architecture Decisions Made During Development
@@ -325,3 +325,33 @@ Browser verification uses disposable local migrated PostgreSQL and synthetic Web
 6. Inspect desktop/tablet/mobile/320px masthead, nav, portrait/landscape/panorama, metadata and review text. Check keyboard navigation, no overflow and no GPS/private notes/source/credential leakage.
 
 Known limits: real high-entropy full-resolution processing on the actual Vercel plan still requires measurement; JPEGs above 25 MiB remain rejected. Older derivatives are retained rather than silently regenerated. Location counts, explicit cover selection, Map, Search and About content remain deferred. Offset pagination/no shared cache remain existing tradeoffs. No additional unresolved product decision. Recommend next: owner acceptance and bounded performance/accessibility refinement before selecting the next discovery feature; do not automatically start Map/Search.
+
+
+## Milestone 7.1 — Hotels, Stays, performance and GPS audit
+
+- Hotel owns current whole-star rating, existing recommendation booleans, new public review and explicit eligible cover. Hotel edit includes secure photos, import link, visit history and Add Stay. Featured remains the existing Photo-level control.
+- Stay is Hotel + optional dates/Trip + private note, preserving identity/status/timestamps/internal order. Singapore may omit Trip; overseas stays retain the existing required-Trip rule. Independent visit rating/review/room/purpose removed; no historical review merge.
+- Hotel Photos and pending import assignments reference Hotel directly. IDs, unchanged source bytes, derivatives and R2 keys remain intact. Previously parent-hidden Published Hotel Photos become Draft/unfeatured during migration to avoid accidental exposure. Hotel withdrawal hides its photos; Stay/Trip withdrawal hides relevant visit history without withdrawing independent Hotel photography.
+- Canonical /stays/[hotelSlug] presents current opinion, Nice/Record photography and understated visit history. Eligible legacy Stay URLs redirect 307 to Hotel; Draft/nonexistent/wrong-Hotel visits return 404. Photo and Trip cross-links use Hotel URLs.
+- Bounded RLS/invoker cover-ID RPC removes index HTTP N+1; direct Hotel context and parallel independent reads reduce waterfalls. Summary projections omit large unused Hotel fields. Contextual grids lazy-load; responsive sizes match breakpoints and portrait height bounds. No shared public image caching or image processing change.
+- GPS audit confirms optional private EXIF storage, anonymous column denial, explicit public projections, stripped WebP metadata and private sources. No map/GPS-entry feature. Hosted real-photo GPS coverage remains unknown; owner-only audit SQL and M8 considerations are documented.
+- New migration: 20261003000100_hotel_archive_refinement.sql. All applied migrations untouched. No dependency, environment, R2/CORS or remote infrastructure changes.
+
+### Verification (2026-10-03)
+
+| Check | Result |
+| --- | --- |
+| pnpm test | Pass, 106/106; includes forward M7→M7.1 migration and populated twelve-cover regression |
+| pnpm lint | Pass |
+| pnpm typecheck | Pass |
+| pnpm db:types:check | Pass |
+| pnpm build | Pass; isolated missing-config environment, no hosted queries |
+| pnpm test:smoke | Pass against production build: missing config, private redirects, no registration |
+| Populated Chrome route checks | Pass 36 checks: nine public paths at 1440/768/390/320px; no overflow/broken loaded previews, private payload sentinel exclusion, legacy 307 and hidden 404 |
+| Migration validation | Fresh local migrated SQL + upgrade from M7 fixtures pass; no remote dry-run/apply |
+
+Browser checks use disposable anonymous PostgreSQL and synthetic WebPs, not real R2 transfer timing. Real Sharp/source/privacy tests remain in the full suite. Admin form mutations are verified through validation/PostgreSQL tests; the authenticated real-content admin workflow is a manual acceptance step. Local measured index HTTP reads changed Trips 16→5, Stays 15→4; Hotel Photo detail 6→4. These are fixture component counts, not measured production speedups. Per-image authorization/R2/Vercel streaming remains uncached. Production TTFB/LCP/bytes/regions and hosted GPS coverage are unknown.
+
+### Files and manual acceptance
+
+See m71-acceptance.md for the complete file manifest, evidence, precise cutover/migration instructions, data re-entry and production acceptance checklist. Existing Hotel ratings/recommendations and visit identities/dates/Trips/private notes survive. Current Hotel review must be re-entered; obsolete Stay editorial fields are intentionally discarded. No R2 object is moved/deleted by migration. No unresolved product decision was introduced. Before M8, complete hosted acceptance, re-enter current opinions, verify withdrawal/imports and measure production performance/GPS coverage.

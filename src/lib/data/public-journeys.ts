@@ -11,19 +11,20 @@ export const getTrip = cache(async(slug:string)=>queryTrip(createPublicClient(),
 export const getLocation = cache(async(slug:string)=>queryLocation(createPublicClient(),slug));
 export async function tripPresentation(trip: NonNullable<Awaited<ReturnType<typeof getTrip>>>, pages:{photos:number;record:number;places:number;stays:number}) {
   const client=createPublicClient();
-  const cover=await publicCover(client,'trip_id',trip);
-  const [stays,cities,places,nice,record]=await Promise.all([
+  const coverPromise=publicCover(client,'trip_id',trip);
+  const [stays,cities,places,record,cover]=await Promise.all([
     relatedStays(client,'trip_id',trip.id,pages.stays),tripGeography(client,trip.id),tripPlaces(client,trip.id,pages.places),
-    contextualPhotos(client,'trip_id',trip.id,'nice',pages.photos,cover?.id),contextualPhotos(client,'trip_id',trip.id,'record',pages.record),
+    contextualPhotos(client,'trip_id',trip.id,'record',pages.record),coverPromise,
   ]);
+  const nice=await contextualPhotos(client,'trip_id',trip.id,'nice',pages.photos,cover?.id);
   return {cover,cities,places,nice,record,stays};
 }
 export async function locationPresentation(location: NonNullable<Awaited<ReturnType<typeof getLocation>>>, pages:{photos:number;trips:number}) {
   const client=createPublicClient();
-  const cover=await publicCover(client,'location_id',location);
-  const [city,trips,nice]=await Promise.all([
+  const [city,trips,cover]=await Promise.all([
     locationGeography(client,location),locationTrips(client,location.id,pages.trips),
-    contextualPhotos(client,'location_id',location.id,'nice',pages.photos,cover?.id),
+    publicCover(client,'location_id',location),
   ]);
+  const nice=await contextualPhotos(client,'location_id',location.id,'nice',pages.photos,cover?.id);
   return {cover,city,trips,nice};
 }
