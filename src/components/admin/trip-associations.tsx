@@ -23,7 +23,7 @@ export function TripCityRow({ tripId, city, sequence }: { tripId: string; city: 
   const [state, action, pending] = useActionState(setTripCity.bind(null, tripId), emptyFormState);
   return <article className="panel"><h3>{city.name} · {city.country_name}</h3>
     <form id={formId} action={action}><Feedback state={state} /><input type="hidden" name="city_id" value={city.id} /><Field formId={formId} state={state} name="sequence" label="Position (optional)" type="number" step={1} min={0} initial={sequence} /><button disabled={pending} type="submit">Save City position</button></form>
-    <DeleteForm action={removeTripCity.bind(null, tripId, city.id)} label="Remove City from Trip" explanation="The City record is kept. Removal is blocked while a Location or Stay in this Trip uses the City." />
+    <DeleteForm action={removeTripCity.bind(null, tripId, city.id)} label="Remove City from Trip" explanation="The City record is kept. Removal is blocked while a Location in this Trip uses the City." />
   </article>;
 }
 export function AddTripLocation({ tripId, locations }: { tripId: string; locations: Location[] }) {

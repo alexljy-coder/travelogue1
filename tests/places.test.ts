@@ -13,7 +13,7 @@ let db:PGlite;
 const trip='30000000-0000-4000-8000-000000000001';const location='40000000-0000-4000-8000-000000000001';
 const photo=(n:number)=>`70000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 before(async()=>{db=await createTestDatabase();});after(async()=>{await db?.close();});
-beforeEach(async()=>{await db.exec('truncate public.import_items,public.import_batches,public.photos,public.trip_locations,public.trip_cities,public.stays,public.hotels,public.locations,public.trips,public.cities,public.countries,private.admin_identity,auth.users');await db.exec(await readFile('supabase/tests/fixtures.sql','utf8'));});
+beforeEach(async()=>{await db.exec('truncate public.import_items,public.import_batches,public.photos,public.trip_locations,public.trip_cities,public.hotels,public.locations,public.trips,public.cities,public.countries,private.admin_identity,auth.users');await db.exec(await readFile('supabase/tests/fixtures.sql','utf8'));});
 test('Trip index/details expose Published slugs and real supporting geography; Draft/missing invalid slugs hidden',async()=>{
  const client=createAnonymousClient(db);const result=await queryTripIndex(client);assert.equal(result.trips.length,1);assert.equal(result.trips[0].slug,'published-trip');assert.equal(result.trips[0].cities.length,1);
  assert.ok(await queryTrip(client,'published-trip'));for(const slug of ['draft-trip','missing-trip','bad/slug'])assert.equal(await queryTrip(client,slug),null);

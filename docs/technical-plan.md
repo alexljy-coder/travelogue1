@@ -1,3 +1,5 @@
+Current architecture is §16; earlier milestone sections document their historical state.
+
 # V1 technical plan
 
 Milestones 1–2 implement the foundation and Trip/Location workflow; hosted verification is complete per the owner's instructions. Milestone 3 private photo ingestion has been manually verified locally and on Vercel against hosted Supabase/R2, as confirmed by the owner. Milestone 4 public photography is deployed and manually accepted on Vercel per the owner. Milestone 5 public Trips and Places is deployed and accepted per the owner. Milestone 6 adds the Hotel/Stay branch end-to-end. Product authority: [buildbible.md](./buildbible.md), read in full; only owner-approved M7 superseding rules are updated. Owner resolutions and implementation decisions: [decisions.md](./decisions.md).
@@ -259,7 +261,7 @@ JPEG source processing now accepts full resolution within 25 MiB and 80MP, retai
 Dynamic HTML, cookie-free anonymous no-store queries and per-request derivative authorization remain intact, including CDN no-store headers and the optimizer block. Only request-local React deduplication is used. Shared/public caches are intentionally excluded. Test coverage uses real embedded SQL/Sharp and fake object storage; actual full-resolution Lightroom memory/time on Vercel remains manual acceptance. The synthetic 60MP test demonstrates valid dimensions, not worst-case resource capacity.
 
 
-## 15. Milestone 7.1 consolidation (current architecture)
+## 15. Milestone 7.1 consolidation (historical; superseded by §16)
 
 This section supersedes historical M6/M7 descriptions of Stay reviews/photo ownership. Hotel is persistent identity/current opinion: existing rating and recommendation flags plus review_text/cover_photo_id. Stay is Hotel/dates/Trip/private note plus publication/internal ordering/identity timestamps. Overseas requires Trip; Singapore can omit it. Photo and pending import target Hotel directly; published Hotel photos require visible Hotel, independent of a visit. All old R2 bytes/UUIDs/profiles and import byte/pixel/batch limits remain unchanged.
 
@@ -268,3 +270,12 @@ New forward migration `20261003000100_hotel_archive_refinement.sql` derives rela
 Public Hotel is `/stays/[hotelSlug]`; old visit route validates public membership then redirects (307/no-store). Hotel gallery Nice plus separate Record, review and understated history retain 24-row sections. Index remains 12 + lookahead. Cross-links now target Hotel; actual visit Trip relationships remain visible only under existing parent RLS. Admin Hotel combines opinion, cover, photos and visits; Photo importer/editor targets Hotel and uses the one existing private pipeline.
 
 Query-count findings, bounded fixes, GPS audit, unknown production timing and manual migration/acceptance are documented in [m71-acceptance.md](./m71-acceptance.md). Per-request media authorization/no-store remains unchanged; no broad caching, Map/Search, source replacement, coordinate precision decision or unrelated redesign.
+
+
+## 16. M7.3 current Hotel-only architecture
+
+Hotel owns persistent identity/geography/current rating/recommendation flags/review/cover. Photo and pending import reference Hotel directly via existing hotel_id; no Visit/Stay or Hotel–Trip entity. New 20261004000100_remove_stays.sql replaces only dependent save/Trip/Singapore guard functions, removes the obsolete Hotel geography trigger and Stay RPC/table (including its policies/indexes/triggers). It performs no Hotel/Photo/import row changes and no R2 operations. Keep former migrations unchanged; manual coordinated schema/code rollout only.
+
+Public /hotels index remains twelve + lookahead, bounded invoker cover-ID RPC and safe batched geography; Hotel detail Nice/Record sections remain 24 + lookahead, parallel reads and safe cover exclusion/fallback. No history reads. Canonical links and metadata use Hotels. Legacy Stays routes are 308, with per-request anonymous Published Hotel resolution for property/visit URLs; no visit lookup. Normal /photos/home explicitly select Travel, while Hotel UUID detail/media stay usable within Hotel gallery. No shared cache, public bucket or source delivery change.
+
+Admin Hotel Photos panel/Add Photos/cover makes the existing importer discoverable. Hotel-targeted imports validate existing UUID, lock context/property, preserve secure server operations and avoid manual ID copying. Hotel deletion still refuses Photo/import references; Photo storage-aware deletion is unchanged. No environment/dependency/CORS configuration changes. See m73-acceptance.md for validation, migration loss/preservation, redirects and rollout.

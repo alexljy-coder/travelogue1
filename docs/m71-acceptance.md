@@ -1,3 +1,5 @@
+> Historical M7.1 report. M7.3 deliberately removes Stay and replaces Stays URLs/workflows; use [m73-acceptance.md](./m73-acceptance.md) for current rollout and acceptance. Do not execute obsolete visit checks below.
+
 # Milestone 7.1 audit and acceptance
 
 Hotel is property/current opinion; Stay is visit history. This is owner-authorized consolidation, not Map/Search or a public cache rewrite. No remote data/infrastructure was changed.

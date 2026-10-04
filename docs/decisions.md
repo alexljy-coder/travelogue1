@@ -2,6 +2,8 @@
 
 Product authority: [buildbible.md](./buildbible.md). Owner resolutions below supersede Milestone 0 proposals; the Build Bible now includes the explicitly approved M7 superseding rules.
 
+Historical decisions below are retained as an audit trail. D035–D037 and current Build Bible supersede all Stay/visit and Stays URL rules.
+
 ## Resolved by the owner before Milestone 1
 
 1. **Photo URLs:** `/photos/[id]` uses the Photo UUID. No photo slug in V1.
@@ -208,3 +210,20 @@ No shared cache/CDN/public bucket, no signed public GETs, no optimizer; every de
 Optional paired EXIF coordinates are extracted/validated privately, written at finalization, and shown only in authenticated Photo admin. Source JPEG remains unchanged/private; generated WebPs strip EXIF/XMP/GPS. Anonymous Photo column grants and all narrow public payloads exclude exact GPS, source/import fields; Stay notes have no anonymous grant. Tests check actual SQL grants, rendered/serialized payloads, image source rejection and parent withdrawal. M7.1 creates no coordinate-entry or Map feature.
 
 M8 inputs: Travel Photo → editorial Location with optional paired representative coordinates; Hotel Photo → Hotel with separate optional coordinates; optional exact Photo GPS stays private. Absence of GPS is valid. Hosted private coverage is unknown; operator-only count queries are documented rather than exposing an audit API or inventing coverage. Decide map precision/representation in M8, not now.
+
+
+## D035 — M7.3 Hotel only, no replacement visit concept
+
+Stay was removed after real-world use demonstrated that individual visit records added maintenance friction without sufficient archival value.
+
+Hotel = persistent property + current opinion + Hotel photography. Drop Stay table/RPC/policies/indexes/triggers/types/validation/forms/admin actions/history and Trip lodging sections. No date arrays/JSON/Visit replacement or Hotel–Trip join. Stay data is intentionally discarded. Update Hotel save, Trip City removal/deletion and Singapore Travel guards to remove their Stay references; existing Trip City memberships remain explicit geography, not a Hotel relationship. M7.1 Photo/import hotel_id, Hotel editorial/cover, all Photo fields/objects/publication remain unchanged. DROP TABLE uses RESTRICT, not broad CASCADE. Applied migrations stay immutable.
+
+## D036 — Canonical Hotels and safe permanent legacy redirects
+
+/hotels and /hotels/[hotelSlug] are canonical. /stays returns 308 to /hotels. Old property/individual visit routes resolve the Hotel through the cookie-free anonymous Published query first; redirect 308 only when visible, otherwise 404. Obsolete visit ID is ignored because there is no visit identity to validate. No wildcard infrastructure redirect that reveals private Hotel existence. Redirects use existing dynamic/no-store public boundary. Their destinations still authorize every read. Public navigation PHOTOS/TRIPS/SINGAPORE/HOTELS/ABOUT; About retains disabled treatment; Map label omitted, no feature added.
+
+## D037 — Obvious Hotel photo workflow and collection separation
+
+Hotel editor places a visible Photos panel after current review and before cover selector: prominent Add Photos, secure lazy previews, selected-cover label and Photo edit links. Add Photos passes current Hotel to the one existing importer; server validates the target, browser locks Hotel context/identity and exposes the property name. Reuse existing authenticated ingestion/duplicate/cleanup/source/EXIF/GPS/derivative workflow. Admin Hotel photo pagination preserves Hotel filtering.
+
+Global Photos (including explicit Record) and homepage photo selection now filter Travel; Hotel photos are documentation, not normal photography. Singapore/Trip/Location already filter Travel. Hotel photo UUID detail and derivative routes remain valid for Hotel galleries and link back to Hotel. Featured remains Published Nice at Photo level; Hotel Featured does not enter the photography homepage. No performance/cache/derivative architecture rewrite: bounded covers, parallel reads, lazy contextual grids and accurate responsive sizes preserved.

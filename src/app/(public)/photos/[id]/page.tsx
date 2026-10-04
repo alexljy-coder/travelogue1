@@ -26,7 +26,7 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
     ['Camera', [photo.camera_make, photo.camera_model].filter(Boolean).join(' ') || null], ['Lens', photo.lens],
     ['Focal length', photo.focal_length ? `${photo.focal_length} mm` : null], ['Aperture', photo.aperture ? `ƒ/${photo.aperture}` : null], ['Shutter', photo.shutter_speed], ['ISO', photo.iso ? String(photo.iso) : null],
   ].filter((entry): entry is [string, string] => !!entry[1]);
-  return <main id="archive-content" className="archive-main archive-detail"><Link className="archive-back" href={photo.classification === 'record' ? '/photos?view=record' : '/photos'}>← Photos{photo.classification === 'record' ? ' / Record' : ''}</Link>
+  return <main id="archive-content" className="archive-main archive-detail"><Link className="archive-back" href={photo.context === 'hotel' && photo.place.hotel_slug ? `/hotels/${photo.place.hotel_slug}` : photo.classification === 'record' ? '/photos?view=record' : '/photos'}>← {photo.context === 'hotel' ? 'Hotel' : 'Photos'}{photo.context === 'travel' && photo.classification === 'record' ? ' / Record' : ''}</Link>
     <figure className="archive-detail-image"><Photograph photo={photo} detail priority /></figure>
     <div className="archive-detail-text"><section><h1>{photoLabel(photo)}</h1>{photo.description && <p className="archive-description">{photo.description}</p>}<PhotoContextLinks photo={photo}/></section>
       {metadata.length > 0 && <dl className="archive-metadata">{metadata.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>}

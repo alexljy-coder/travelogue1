@@ -1,4 +1,3 @@
-import {AdminTripStays} from '@/components/admin/trip-stays';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/require-admin';
@@ -13,14 +12,14 @@ export default async function TripPage({ params, searchParams }: { params: Promi
   const { client } = await requireAdmin();
   const { id } = await params;
   if (!uuidSchema.safeParse(id).success) notFound();
-  const [{ data: trip, error }, geography, locations, cityLinks, locationLinks, photos, stays, query] = await Promise.all([
+  const [{ data: trip, error }, geography, locations, cityLinks, locationLinks, photos, query] = await Promise.all([
     client.from('trips').select('*').eq('id', id).maybeSingle(), getGeography(client), getLocations(client),
     readAll((from, to) => client.from('trip_cities').select('*').eq('trip_id', id).order('sequence', { nullsFirst: false }).order('city_id').range(from, to)),
     readAll((from, to) => client.from('trip_locations').select('*').eq('trip_id', id).order('sequence', { nullsFirst: false }).order('location_id').range(from, to)),
     client.from('photos').select('id', { count: 'exact', head: true }).eq('trip_id', id),
-    client.from('stays').select('id', { count: 'exact', head: true }).eq('trip_id', id), searchParams,
+    searchParams,
   ]);
-  if (error || photos.error || stays.error) throw new Error('Unable to load Trip.');
+  if (error || photos.error) throw new Error('Unable to load Trip.');
   if (!trip) notFound();
   const citiesById = new Map(geography.cities.map((city) => [city.id, city]));
   const locationsById = new Map(locations.map((location) => [location.id, location]));
@@ -39,7 +38,7 @@ export default async function TripPage({ params, searchParams }: { params: Promi
       {locationLinks?.map((link) => { const location = locationsById.get(link.location_id); return location ? <TripLocationRow key={location.id} tripId={id} location={location} cityName={citiesById.get(location.city_id)?.name ?? ''} sequence={link.sequence} visitedAt={link.visited_at} /> : null; })}
       <AddTripLocation tripId={id} locations={locations.filter((location) => !associated.has(location.id))} />
     </section>
-    <DeleteForm action={deleteTrip.bind(null, id)} label="Delete Trip" explanation={`This permanently deletes this Trip and its ${cityLinks?.length ?? 0} City / ${locationLinks?.length ?? 0} Location associations. Cities and Locations are kept. Photos or Stays block deletion.`} blocked={(photos.count ?? 0) || (stays.count ?? 0) ? 'This Trip has Photos or Stays. Keep it, or change its status to Draft.' : undefined} />
-    <AdminTripStays client={client} tripId={id}/>
+    <DeleteForm action={deleteTrip.bind(null, id)} label="Delete Trip" explanation={`This permanently deletes this Trip and its ${cityLinks?.length ?? 0} City / ${locationLinks?.length ?? 0} Location associations. Cities and Locations are kept. Photos block deletion.`} blocked={(photos.count ?? 0) ? 'This Trip has Photos. Keep it, or change its status to Draft.' : undefined} />
+
   </main>;
 }

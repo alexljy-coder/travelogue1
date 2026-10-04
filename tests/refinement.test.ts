@@ -6,11 +6,10 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {createTestDatabase,asRole} from './database';
 import {createAnonymousClient} from './public-client';
-import {queryHotel,queryHotelIndex,hotelCover,hotelPhotos} from '../src/lib/data/public-stays';
+import {queryHotelIndex,hotelCover,hotelPhotos} from '../src/lib/data/public-hotels';
 import {queryTripIndex} from '../src/lib/data/public-places';
 import {queryPhoto,orderedPhotos} from '../src/lib/data/public-photos';
 import {Photograph,PhotoGrid,responsiveSources} from '../src/components/public/photograph';
-import {HotelEditorial,HotelReview} from '../src/components/public/stay';
 import {deliverPublicImage} from '../src/lib/photos/public-image';
 const hotel='50000000-0000-4000-8000-000000000001',photo='70000000-0000-4000-8000-000000000003',admin='00000000-0000-4000-8000-000000000001';
 async function fixture(){const db=await createTestDatabase();await db.exec(await readFile('supabase/tests/fixtures.sql','utf8'));return db;}
@@ -38,26 +37,6 @@ test('M7.1 forward migration preserves identities, private GPS, keys and active 
  }finally{await db.close();}
 });
 
-test('Hotel current opinion persists independently of lightweight visits and renders public review safely',async()=>{
- const db=await fixture();try{
- await db.query("update public.hotels set rating=4,review_text='<script>literal review</script>',recommended_business=true where id=$1",[hotel]);
- let first='',second='';
- await db.exec("update public.countries set code='SG' where code='VC'");
- await asRole(db,'authenticated',admin,async()=>{
-  const visits:string[]=[];
-  for(let i=0;i<2;i++) visits.push((await db.query<{id:string}>('select public.admin_save_stay(null,$1) id',[{hotel_id:hotel,check_in:null,check_out:null,trip_id:null,status:'published',internal_notes:'PRIVATE VISIT NOTE'}])).rows[0].id);
-  [first,second]=visits;
-  await db.query('delete from public.stays where id=$1',[first]);
- });
- const client=createAnonymousClient(db),h=await queryHotel(client,'published-hotel');assert.ok(h);
- assert.equal(h.rating,4);assert.equal(h.review_text,'<script>literal review</script>');assert.equal(h.recommended_business,true);
- const html=renderToStaticMarkup(React.createElement(HotelEditorial,{hotel:h}));assert.match(html,/4 \/ 5 stars/);assert.match(html,/Business/);
- const review=renderToStaticMarkup(React.createElement(HotelReview,{text:h.review_text}));assert.match(review,/&lt;script&gt;/);assert.doesNotMatch(review,/<script>/);
- assert.ok(await queryPhoto(client,photo));
- assert.equal((await db.query('select id from public.stays where id=$1',[second])).rows.length,1);
- }finally{await db.close();}
-});
-
 test('Hotel cover selection requires matching ready Published Nice photography; stale pointers safely fall back',async()=>{
  const db=await fixture();try{
  const input=(await db.query<Record<string,unknown>>('select * from public.hotels where id=$1',[hotel])).rows[0];
@@ -75,7 +54,6 @@ test('Hotel cover selection requires matching ready Published Nice photography; 
 test('Hotel ownership withdrawal governs public images without depending on visits; source and exact GPS stay private',async()=>{
  const db=await fixture();try{
  await db.query('update public.photos set latitude=1.23456789,longitude=103.98765432 where id=$1',[photo]);
- await db.query("update public.stays set status='draft'");
  const client=createAnonymousClient(db);const payload=await hotelPhotos(client,hotel);
  assert.equal(payload.photos.length,1);assert.doesNotMatch(JSON.stringify(payload),/1\.23456789|103\.98765432|latitude|longitude|internal_notes|storage_key/);
  let reads=0;const deps={visible:async(id:string)=>!!await queryPhoto(client,id),media:async()=>{reads++;return {body:new ReadableStream({start(c){c.close();}}),contentType:'image/webp'};},missing:()=>false};
@@ -85,7 +63,6 @@ test('Hotel ownership withdrawal governs public images without depending on visi
  assert.equal((await deliverPublicImage(photo,'large',deps)).status,404);assert.equal(reads,1);
  await asRole(db,'anon',null,async()=>{
   for(const column of ['latitude','longitude','storage_key','filename'])await assert.rejects(db.query(`select ${column} from public.photos`));
-  await assert.rejects(db.query('select internal_notes from public.stays'));
  });
  }finally{await db.close();}
 });

@@ -77,9 +77,9 @@
 @media(max-width:740px){.journey-index,.journey-place-list{grid-template-columns:1fr;}.journey-section{margin-top:2rem;}}
 @media(max-width:600px){.journey-record .archive-grid,.journey-record .archive-grid[data-count="2"]{columns:1;}}
 
-.public-site .stay-editorial { color: #615d56; font-size: .9rem; margin: .65rem 0; }
-.public-site .stay-context { max-width: 48rem; line-height: 1.65; margin-block: 2rem; }
-.public-site .stay-review { max-width: 48rem; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; }
+.public-site .hotel-editorial { color: #615d56; font-size: .9rem; margin: .65rem 0; }
+.public-site .hotel-context { max-width: 48rem; line-height: 1.65; margin-block: 2rem; }
+.public-site .hotel-review { max-width: 48rem; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; }
 
 .public-site .journey-heading { display: block; padding: 0; max-width: none; }
 

@@ -7,7 +7,3 @@ export const publicPhotoColumns = [
   'camera_make', 'camera_model', 'lens', 'focal_length', 'aperture', 'shutter_speed', 'iso',
   'created_at', 'updated_at',
 ] as const satisfies readonly (keyof Database['public']['Tables']['photos']['Row'])[];
-
-export const publicStayColumns = [
-  'id', 'hotel_id', 'trip_id', 'check_in', 'check_out', 'status', 'editorial_order', 'created_at', 'updated_at',
-] as const satisfies readonly (keyof Database['public']['Tables']['stays']['Row'])[];

@@ -3,7 +3,7 @@ import { before, after, beforeEach, test } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import type { PGlite } from '@electric-sql/pglite';
 import { createTestDatabase, asRole } from './database';
-import { publicPhotoColumns, publicStayColumns } from '../src/lib/data/public-columns';
+import { publicPhotoColumns } from '../src/lib/data/public-columns';
 
 let db: PGlite;
 const admin = '00000000-0000-4000-8000-000000000001';
@@ -11,9 +11,8 @@ const other = '00000000-0000-4000-8000-000000000002';
 const trip = '30000000-0000-4000-8000-000000000001';
 const location = '40000000-0000-4000-8000-000000000001';
 const hotel = '50000000-0000-4000-8000-000000000001';
-const stay = '60000000-0000-4000-8000-000000000001';
 const photo = '70000000-0000-4000-8000-000000000001';
-const tables = ['countries', 'cities', 'locations', 'trips', 'trip_cities', 'trip_locations', 'hotels', 'stays', 'photos', 'import_batches', 'import_items'];
+const tables = ['countries', 'cities', 'locations', 'trips', 'trip_cities', 'trip_locations', 'hotels', 'photos', 'import_batches', 'import_items'];
 const errorCode = (code: string) => (error: unknown) => typeof error === 'object' && error !== null && 'code' in error && error.code === code;
 // PostgreSQL versions can report RESTRICT as restrict_violation or foreign_key_violation.
 const restrictedDeletion = (error: unknown) => errorCode('23001')(error) || errorCode('23503')(error);
@@ -40,7 +39,6 @@ test('anonymous direct lookup and joins reveal only effectively published rows',
     assert.equal((await db.query('select id from public.trips')).rows.length, 1);
     assert.equal((await db.query('select id from public.locations')).rows.length, 1);
     assert.equal((await db.query('select id from public.hotels')).rows.length, 1);
-    assert.equal((await db.query('select id from public.stays')).rows.length, 1);
     assert.equal((await db.query('select trip_id from public.trip_locations')).rows.length, 1);
     assert.equal((await db.query('select trip_id from public.trip_cities')).rows.length, 1);
     assert.equal((await db.query('select id from public.cities')).rows.length, 1);
@@ -52,14 +50,12 @@ test('anonymous direct lookup and joins reveal only effectively published rows',
   });
 });
 
-test('photo GPS/storage metadata and Stay internal notes cannot be selected publicly', async () => {
+test('photo GPS/storage metadata cannot be selected publicly', async () => {
   await anon(async () => {
     assert.equal((await db.query(`select ${publicPhotoColumns.join(',')} from public.photos`)).rows.length, 3);
-    assert.equal((await db.query(`select ${publicStayColumns.join(',')} from public.stays`)).rows.length, 1);
     for (const column of ['latitude','longitude','filename','storage_key','file_hash','import_batch_id','captured_at_offset_minutes','processing_status']) {
       await assert.rejects(db.query(`select ${column} from public.photos`), errorCode('42501'));
     }
-    await assert.rejects(db.query('select internal_notes from public.stays'), errorCode('42501'));
     await assert.rejects(db.query('select * from public.photos'), errorCode('42501'));
     await assert.rejects(db.query('select id from public.photos where latitude=1.2'), errorCode('42501'));
     await assert.rejects(db.query('select id from public.photos order by longitude'), errorCode('42501'));
@@ -93,7 +89,6 @@ test('administrator can read private columns and CRUD; no identity fails closed'
   await owner(async () => {
     assert.equal((await db.query<{ is_admin: boolean }>('select public.is_admin()')).rows[0].is_admin, true);
     assert.equal((await db.query('select * from public.photos')).rows.length, 9);
-    assert.equal((await db.query<{ internal_notes: string }>('select internal_notes from public.stays where id=$1', [stay])).rows[0].internal_notes, 'PRIVATE NOTE');
     const { rows } = await db.query<{ id: string }>("insert into public.trips(title,slug) values ('Undated','undated') returning id");
     assert.equal((await db.query('update public.trips set description=$1 where id=$2 returning id', ['Edited',rows[0].id])).rows.length, 1);
     assert.equal((await db.query('delete from public.trips where id=$1 returning id', [rows[0].id])).rows.length, 1);
@@ -112,18 +107,17 @@ test('identity accepts only one administrator and is not publicly editable', asy
   await owner(async () => { await assert.rejects(db.query('update private.admin_identity set user_id=$1', [other]), errorCode('42501')); });
 });
 
-test('unpublishing Trip hides Travel and Hotel children without changing their states', async () => {
+test('unpublishing Trip hides Travel children independently of Hotel without changing their states', async () => {
   await owner(async () => { await db.query("update public.trips set status='draft' where id=$1", [trip]); });
   await anon(async () => {
     assert.equal((await db.query('select id from public.photos')).rows.length, 1);
-    assert.equal((await db.query('select id from public.stays')).rows.length, 0);
     assert.equal((await db.query('select trip_id from public.trip_locations')).rows.length, 0);
   });
   assert.equal((await db.query<{ status: string }>('select status from public.photos where id=$1', [photo])).rows[0].status, 'published');
 });
 
-test('unpublishing Hotel, Stay or Location hides the corresponding photos', async () => {
-  for (const [table, id, expected] of [['hotels',hotel,2],['stays',stay,3],['locations',location,1]] as const) {
+test('unpublishing Hotel or Location hides the corresponding photos', async () => {
+  for (const [table, id, expected] of [['hotels',hotel,2],['locations',location,1]] as const) {
     await db.query(`update public.${table} set status='draft' where id=$1`, [id]);
     await anon(async () => assert.equal((await db.query('select id from public.photos')).rows.length, expected));
     await db.query(`update public.${table} set status='published' where id=$1`, [id]);
@@ -132,19 +126,7 @@ test('unpublishing Hotel, Stay or Location hides the corresponding photos', asyn
 
 test('optional dates permit unknown/partial values; known reversed dates fail', async () => {
   await db.query('update public.trips set start_date=null,end_date=$1 where id=$2', ['2024-01-01',trip]);
-  await db.query('update public.stays set check_in=$1,check_out=null where id=$2', ['2024-01-02',stay]);
   await assert.rejects(db.query('update public.trips set start_date=$1,end_date=$2 where id=$3', ['2024-02-01','2024-01-01',trip]), errorCode('23514'));
-  await assert.rejects(db.query('update public.stays set check_in=$1,check_out=$2 where id=$3', ['2024-02-01','2024-01-01',stay]), errorCode('23514'));
-  await db.query('update public.stays set check_in=null,check_out=null where id=$1', [stay]);
-});
-
-test('Stays require Hotel and Trip; repeat Stays and optional reviews are allowed', async () => {
-  await assert.rejects(db.query('update public.stays set trip_id=null where id=$1',[stay]), errorCode('23514'));
-  await assert.rejects(db.query('update public.stays set hotel_id=null where id=$1',[stay]), errorCode('23502'));
-  await db.query('insert into public.stays(hotel_id,trip_id) values ($1,$2)', [hotel,trip]);
-  assert.equal((await db.query('select id from public.stays where hotel_id=$1 and trip_id=$2', [hotel,trip])).rows.length, 3);
-  await db.query("update public.trips set purpose='photography' where id=$1", [trip]);
-  for (const rating of [0,6]) await assert.rejects(db.query('update public.hotels set rating=$1 where id=$2',[rating,hotel]), errorCode('23514'));
 });
 
 test('published photo assignments/readiness and mutually exclusive contexts are enforced', async () => {

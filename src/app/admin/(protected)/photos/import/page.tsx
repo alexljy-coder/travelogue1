@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { getStayCatalog } from '@/lib/admin/queries';
+import { getPhotoCatalog } from '@/lib/admin/queries';
+import { notFound } from 'next/navigation';
 import { uuidSchema } from '@/lib/validation/content';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { PhotoImporter } from '@/components/admin/photo-importer';
@@ -7,13 +8,16 @@ import { ImportRecovery } from '@/components/admin/import-recovery';
 
 export default async function ImportPage({searchParams}:{searchParams:Promise<{hotel?:string}>}) {
   const { client } = await requireAdmin();
-  const params=await searchParams;const catalog=await getStayCatalog(client);
+  const params=await searchParams;const catalog=await getPhotoCatalog(client);
+  const target = params.hotel ? catalog.hotels.find(h=>uuidSchema.safeParse(params.hotel).success && h.id===params.hotel) : undefined;
+  if (params.hotel && !target) notFound();
   const [items, batches] = await Promise.all([
     client.from('import_items').select('id,filename,state,error,lease_until,created_at').order('created_at',{ ascending: false }).order('id').limit(25),
     client.from('import_batches').select('*').order('created_at',{ ascending: false }).order('id').limit(10),
   ]);
   return <main><p><Link href="/admin/photos">Photos</Link></p><h1>Import Lightroom JPEGs</h1>
-    <PhotoImporter hotels={catalog.hotels} hotelId={uuidSchema.safeParse(params.hotel).success?params.hotel:undefined} />
+    {target && <p>Adding photos to <Link href={`/admin/hotels/${target.id}`}>{target.name}</Link>. Hotel context is already selected.</p>}
+    <PhotoImporter hotels={catalog.hotels} hotelId={target?.id} />
     <section className="content-section"><h2>Recent import status</h2><p>Refresh to check an uncertain result. Interrupted operations retain their UUID for recovery. An active lease must expire before cleanup/retry is allowed.</p>
       {items.error ? <p className="error">Import status is unavailable. Apply the Milestone 3 migration before importing.</p> : !items.data?.length ? <p>No import attempts yet.</p> : items.data.map((item) => <article className="panel" key={item.id}>
         <h3>{item.filename}</h3><p>{item.state} · {item.id}</p>

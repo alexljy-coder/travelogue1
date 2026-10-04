@@ -28,7 +28,7 @@ export async function getLocations(client: AdminClient) {
   return readAll((from, to) => client.from('locations').select('*').order('name').order('id').range(from, to));
 }
 
-export async function getStayCatalog(client: AdminClient) {
+export async function getPhotoCatalog(client: AdminClient) {
   const [hotels,trips] = await Promise.all([
     readAll((from,to)=>client.from('hotels').select('*').order('name').order('id').range(from,to)),
     readAll((from,to)=>client.from('trips').select('*').order('title').order('id').range(from,to)),

@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { uuidSchema } from '@/lib/validation/content';
-import { readAll, getLocations, getStayCatalog } from '@/lib/admin/queries';
+import { readAll, getLocations, getPhotoCatalog } from '@/lib/admin/queries';
 import { PhotoForm } from '@/components/admin/photo-form';
 import { DeleteForm } from '@/components/admin/delete-form';
 import { deletePhoto } from '../actions';
@@ -14,7 +14,7 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
   const { data: photo, error } = await client.from('photos').select('*').eq('id',id).maybeSingle();
   if (error) throw new Error('Unable to load Photo.'); if (!photo) notFound();
   const [locations, catalog, memberships] = await Promise.all([
-    getLocations(client), getStayCatalog(client),
+    getLocations(client), getPhotoCatalog(client),
     readAll((from,to) => client.from('trip_locations').select('trip_id,location_id').order('trip_id').order('location_id').range(from,to)),
   ]);
   return <main><p><Link href="/admin/photos">Photos</Link></p><h1>{photo.filename}</h1>

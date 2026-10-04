@@ -15,7 +15,7 @@ const owner = <T>(fn: () => Promise<T>) => asRole(db,'authenticated',admin,fn);
 before(async () => { db = await createTestDatabase(); source = await sharp({ create: { width: 800, height: 400, channels: 3, background: '#aabbcc' } }).jpeg().toBuffer(); });
 after(async () => { await db?.close(); });
 beforeEach(async () => {
-  await db.exec('truncate public.countries,public.cities,public.locations,public.trips,public.trip_cities,public.trip_locations,public.hotels,public.stays,public.photos,public.import_items,public.import_batches,private.admin_identity,auth.users');
+  await db.exec('truncate public.countries,public.cities,public.locations,public.trips,public.trip_cities,public.trip_locations,public.hotels,public.photos,public.import_items,public.import_batches,private.admin_identity,auth.users');
   await db.exec(await readFile('supabase/tests/fixtures.sql','utf8'));
 });
 function repo(): ImportRepository {

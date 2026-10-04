@@ -382,48 +382,6 @@ export type Database = {
           { foreignKeyName: "photos_trip_id_fkey"; columns: ["trip_id"]; isOneToOne: false; referencedRelation: "trips"; referencedColumns: ["id"] },
         ];
       };
-      stays: {
-        Row: {
-          id: string;
-          hotel_id: string;
-          trip_id: string | null;
-          check_in: string | null;
-          check_out: string | null;
-          internal_notes: string | null;
-          status: string;
-          editorial_order: number | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          hotel_id: string;
-          trip_id?: string | null;
-          check_in?: string | null;
-          check_out?: string | null;
-          internal_notes?: string | null;
-          status?: string;
-          editorial_order?: number | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          hotel_id?: string;
-          trip_id?: string | null;
-          check_in?: string | null;
-          check_out?: string | null;
-          internal_notes?: string | null;
-          status?: string;
-          editorial_order?: number | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          { foreignKeyName: "stays_hotel_id_fkey"; columns: ["hotel_id"]; isOneToOne: false; referencedRelation: "hotels"; referencedColumns: ["id"] },
-          { foreignKeyName: "stays_trip_id_fkey"; columns: ["trip_id"]; isOneToOne: false; referencedRelation: "trips"; referencedColumns: ["id"] },
-        ];
-      };
       trip_cities: {
         Row: {
           trip_id: string;
@@ -536,7 +494,6 @@ export type Database = {
       admin_reserve_photo_import: { Args: { p_id: string | null; p_batch_id: string | null; p_filename: string | null; p_hash: string | null; p_size: number | null; p_classification: string | null; }; Returns: string };
       admin_save_hotel: { Args: { p_id: string | null; p_record: Json | null; }; Returns: string };
       admin_save_location: { Args: { p_id: string | null; p_city_id: string | null; p_name: string | null; p_slug: string | null; p_latitude?: number | null; p_longitude?: number | null; p_description?: string | null; p_status?: string | null; p_editorial_order?: number | null; p_trip_id?: string | null; }; Returns: string };
-      admin_save_stay: { Args: { p_id: string | null; p_record: Json | null; }; Returns: string };
       admin_set_trip_city: { Args: { p_trip_id: string | null; p_city_id: string | null; p_sequence?: number | null; }; Returns: undefined };
       admin_set_trip_location: { Args: { p_trip_id: string | null; p_location_id: string | null; p_sequence?: number | null; p_visited_at?: string | null; }; Returns: undefined };
       city_is_singapore: { Args: { p_city_id: string | null; }; Returns: boolean };

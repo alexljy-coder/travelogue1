@@ -1,6 +1,6 @@
 # Implementation status
 
-Milestones 1–7 are complete and accepted per the owner. Milestone 7.1 Hotel/Stay consolidation is implemented and locally verified on 2026-10-03. Its new migration and hosted acceptance remain owner steps. No hosted migration, deployment, Cloudflare change or remote content mutation was performed. Historical milestone sections below record their original implementation; the M7.1 section supersedes the former Stay editorial/photo ownership model.
+Milestones 1–7 are complete per the owner. M7.3 Hotel simplification is implemented and locally verified on 2026-10-04. Stay is removed; Hotel owns current opinion and direct photography. Its new migration/deployment and hosted acceptance remain owner steps. Historical M6/M7/M7.1 descriptions below are superseded by the M7.3 section. No remote migration, deployment or infrastructure mutation was performed.
 
 ## Implemented
 
@@ -13,7 +13,7 @@ Milestones 1–7 are complete and accepted per the owner. Milestone 7.1 Hotel/St
 - Parent-aware anonymous reads and column privacy; authenticated archive access requires the singleton administrator. Unrelated authenticated users receive zero rows and cannot mutate. Private identity cannot be browser-managed.
 - Typed publishing/cover eligibility preflight helpers for future photo/Stay workflows; Trip/Location status can now be edited in admin.
 - Generated Supabase-compatible table/relationship types from migrated PostgreSQL catalog and drift-check script.
-- 106 automated tests, including real embedded PostgreSQL RPCs/constraints/grants/RLS, Sharp JPEG/WebP/EXIF processing, authenticated API boundaries and fake-R2 failure/retry/deletion scenarios. No production bucket access.
+- 101 current automated tests, including real embedded PostgreSQL RPCs/constraints/grants/RLS, Sharp JPEG/WebP/EXIF processing, authenticated API boundaries and fake-R2 failure/retry/deletion scenarios. No production bucket access.
 - Production-server smoke checks against the build's actual configuration, all admin route guards, private image/storage endpoints, unauthorized upload operations, cache/privacy headers, absent registration routes and public Photo/Trip/Location behavior. Missing configuration is separately covered by unit tests.
 - Exact dependency pins/lockfile, Node 24/pnpm tooling, lint/typecheck/build scripts, CI workflow and local Supabase config with signup disabled.
 - Setup guides explaining hosted Auth/migrations and private R2 credentials/CORS/controlled testing. .env.example contains empty variable names only; no real credentials committed.
@@ -46,7 +46,7 @@ Milestone 3 verification run on 2026-10-01:
 
 ## In Progress
 
-- Owner application of the M7.1 migration, coordinated deployment and real-content hosted acceptance; see m71-acceptance.md.
+- Owner confirmation of migration history, M7.3 application/coordinated deployment and real-content acceptance; see m73-acceptance.md.
 
 ## Not Started
 
@@ -355,3 +355,26 @@ Browser checks use disposable anonymous PostgreSQL and synthetic WebPs, not real
 ### Files and manual acceptance
 
 See m71-acceptance.md for the complete file manifest, evidence, precise cutover/migration instructions, data re-entry and production acceptance checklist. Existing Hotel ratings/recommendations and visit identities/dates/Trips/private notes survive. Current Hotel review must be re-entered; obsolete Stay editorial fields are intentionally discarded. No R2 object is moved/deleted by migration. No unresolved product decision was introduced. Before M8, complete hosted acceptance, re-enter current opinions, verify withdrawal/imports and measure production performance/GPS coverage.
+
+
+## M7.3 — Hotel simplification (current)
+
+Stay was removed after real-world use demonstrated that individual visit records added maintenance friction without sufficient archival value.
+
+Hotel = persistent property + current opinion + Hotel photography. No Stay/Visit/history or Hotel–Trip replacement. New migration 20261004000100_remove_stays.sql drops Stay table/RPC/dependencies and replaces Hotel/Trip/Singapore functions that referenced it. Stay rows/dates/notes/status/Trip links are deliberately discarded. Full-row upgrade comparison proves Hotels, Photos, pending imports and their publication/cover/EXIF/storage identities unchanged; no R2 operation.
+
+Canonical /hotels index and /hotels/[hotelSlug] replace Stays. Anonymous-visible Hotel legacy routes redirect 308; Draft/missing Hotels return 404. Obsolete visit ID ignored. Public nav says HOTELS; Map label omitted; About stays disabled. Hotel photography excluded from normal /photos/home/Singapore/Trip/Location; secure UUID detail and Hotel galleries remain.
+
+Hotel editor visibly includes Photos, prominent Add Photos, lazy private previews and cover selection. Targeted importer validates and locks existing Hotel/context, preserving all ingestion/recovery/privacy limits. Stay admin/types/validation/history and Trip lodging sections removed. Bounded cover/parallel/lazy/responsive performance retained; local Hotel detail reads 12→9, Hotel index remains four. Production latency unknown.
+
+| Verification | Result |
+| --- | --- |
+| Full suite | 101/101 pass; obsolete visit tests updated/removed, historical upgrade test retained |
+| Lint / typecheck | Pass |
+| Database type drift | Pass |
+| Production build / smoke | Pass; missing-config build smoke plus separate populated local routes |
+| Responsive | 28 public/admin checks at 1440/768/390/320px, including Hotel→Add Photos; no overflow |
+| Legacy routes | Actual local 308 and private/missing 404 verified |
+| Hosted changes | None |
+
+See m73-acceptance.md for complete file manifest, data-loss/preservation, schema/code cutover, security/performance evidence and manual acceptance. No environment/dependency/R2 changes. Complete hosted acceptance before M8; Map/Search remain deferred.

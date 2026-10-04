@@ -10,7 +10,7 @@
 
 ## 1.1 What this product is
 
-A **personal visual travel archive that connects photography, trips, places and hotel stays through an interactive geographic record.**
+A **personal visual travel archive that connects photography, trips, places and hotels through an interactive geographic record.**
 
 The primary purpose is to preserve and explore the owner's own travel history.
 
@@ -57,7 +57,6 @@ The core entities are:
 - Location
 - Trip
 - Hotel
-- Stay
 - Photo
 
 There is no separate Story entity in V1.
@@ -119,7 +118,7 @@ A Trip is:
 
 > A distinct journey or outing the owner considers a meaningful travel experience worth recording.
 
-A Trip has a time period and may contain Cities, Locations, photographs and Hotel Stays.
+A Trip has a time period and may contain Cities, Locations, photographs.
 
 It does not require a formal itinerary or long-form story.
 
@@ -128,7 +127,6 @@ Examples:
 - China Winter 2026
 - Weekend Bangkok
 - Photography Day — Pulau Ubin
-- Singapore Staycation — August 2026
 - 2 Hours in Ho Chi Minh City Between Meetings
 
 ## 3.1 Trip fields
@@ -207,48 +205,21 @@ The public site may show chronology, but does not need to present the Trip as a 
 
 ---
 
-# 5. Hotel and Stay Model
+# 5. Hotel Model
 
-## 5.1 Hotel
+Hotel = persistent property + current opinion + Hotel photography.
 
-A Hotel is a persistent property and the owner's current opinion of it. Hotel owns the optional whole-star rating (1–5), current public review, Family / Business / Personal-Leisure recommendations, Hotel photography and optional cover. Revisiting a Hotel does not create a new review or gallery. Edit Hotel when the current opinion changes; no historical rating versions.
+Hotel owns identity, City/geography, optional current whole-star rating (1–5), current public review, Family / Business / Personal-Leisure recommendations, Hotel gallery and optional eligible cover. Hotel is not a Location. No historical opinion versions or separate Review entity.
 
-Hotel fields: ID, required name/slug/City, optional brand/address/paired representative coordinates/description/rating/review_text/cover_photo_id/editorial position, existing recommendation flags, Draft/Published and timestamps. Hotel is not a Location.
+There is no Stay or Visit entity, individual visit requirement, date array/history or Hotel–Trip relationship. If dates matter editorially, mention them naturally in the Hotel review.
 
-## 5.2 Stay
-
-A Stay is a lightweight visit record: Hotel, optional check-in/out dates, Trip, private internal note, publication status, ID/timestamps and retained internal display position. Room type, purpose, per-visit rating and review are removed in M7.1. Multiple Stays can reference one Hotel. Dates remain unknown when unknown; compare only when both are known.
-
-Trip remains required outside Singapore. Singapore Hotels (Hotel → City → Country code SG) can have Stays without Trip. Any assigned Trip must be Published for public visit history. Hotel photography no longer depends on an individual Stay/Trip.
-
-## 5.3 Current opinion and history
-
-Record another visit without re-entering rating, review or photographs. Hotel opinion and gallery persist when a visit is edited/deleted. Visit history is understated; private notes never appear publicly. No separate Review entity.
+Stay was removed after real-world use demonstrated that individual visit records added maintenance friction without sufficient archival value.
 
 ---
 
-# 6. Crucial Hotel/Trip Content Separation
+# 6. Hotel/Photography Separation
 
-A Hotel Stay can belong to a Trip without becoming part of the Trip's photographic story.
-
-The relationship is historical/contextual.
-
-It does not imply content nesting.
-
-Therefore:
-
-```text
-TRIP
- ├── Travel Photos
- └── Stays
-
-HOTEL
- ├── Current opinion
- ├── Hotel Photos
- └── Stays (visits)
-```
-
-Hotel photographs do **not** automatically appear in Trip galleries.
+Normal Travel photography belongs to Location and, according to the Singapore rules, optional/required Trip. Hotel photography belongs directly to Hotel. It is documentation for the Hotel gallery, not part of normal /photos, homepage photography, /singapore, Trip or Location galleries. Hotel geography does not imply a second context.
 
 ---
 
@@ -282,12 +253,13 @@ The website must respect this classification.
 
 ### Nice
 
-Automatically eligible for:
+Travel-context Nice photography is eligible for:
 
 - Main Photos page
 - Location galleries
 - Trip galleries
-- Hotel/Stay photography where applicable
+
+Hotel Nice photographs are eligible for the Hotel gallery/cover only, and do not enter normal photography collections.
 
 Can optionally be Featured.
 
@@ -340,7 +312,7 @@ Singapore is home, derived through Location → City → Country (code SG). It i
 Photo → Hotel → City → Country
 ```
 
-Published Hotel photography requires Hotel. It does not require Stay, Trip or Location. Hotel gallery accumulates photographs across visits without duplicating R2 objects. Hotel must be Published for public visibility. Hotel photography stays separate from normal Travel/Singapore photography.
+Published Hotel photography requires Hotel. It does not require Trip or Location. Hotel gallery accumulates photographs over time without duplicating R2 objects. Hotel must be Published for public visibility. Hotel photography stays separate from normal Travel/Singapore photography.
 
 ---
 
@@ -420,7 +392,6 @@ trip_cities
 trip_locations
 
 hotels
-stays
 
 photos
 import_batches
@@ -522,20 +493,6 @@ created_at
 updated_at
 ```
 
-## 10.8 Stays
-
-```text
-id
-hotel_id
-trip_id
-check_in
-check_out
-internal_notes
-status
-created_at
-updated_at
-```
-
 ## 10.9 Photos
 
 ```text
@@ -605,8 +562,8 @@ Examples:
 ```text
 /trips/china-winter-2026
 /locations/mutianyu-great-wall
-/photos/forbidden-city-sunset
-/stays/grand-hyatt-beijing
+/photos/[id]
+/hotels/grand-hyatt-beijing
 ```
 
 The exact URL structure can be refined during implementation, but URLs should be human-readable.
@@ -636,7 +593,6 @@ No complicated role system.
 - Trips
 - Locations
 - Hotels
-- Stays
 - Imports
 
 Settings can be added later.
@@ -649,8 +605,6 @@ The normal workflow is:
 Create Trip
     ↓
 Add Cities / Locations
-    ↓
-Add Hotels / Stays
     ↓
 Import Photos
     ↓
@@ -672,11 +626,9 @@ China Winter 2026
 
 4 Cities
 12 Locations
-3 Stays
 327 Photos
 
 Locations       + Add
-Hotels / Stays  + Add
 Photos          Import Photos
 
 View Public Trip
@@ -763,7 +715,6 @@ It compares against existing:
 - Trips
 - Cities
 - Locations
-- Stays
 
 It suggests groupings.
 
@@ -798,7 +749,6 @@ The user can select all seven and batch assign:
 - Trip
 - Location
 - Context
-- Stay
 - Classification
 
 The importer should avoid requiring individual tagging wherever possible.
@@ -1001,8 +951,7 @@ Primary navigation:
 PHOTOS
 TRIPS
 SINGAPORE
-STAYS
-MAP
+HOTELS
 ABOUT
 ```
 
@@ -1011,7 +960,7 @@ Brand/logo on the left.
 Desktop:
 
 ```text
-[ FOUND ALONG ]            PHOTOS TRIPS SINGAPORE STAYS MAP ABOUT
+[ FOUND ALONG ]            PHOTOS TRIPS SINGAPORE HOTELS ABOUT
 ```
 
 Mobile:
@@ -1081,7 +1030,6 @@ Trip detail can show:
 - Locations/geographic chapters
 - Optional chronology
 - Map
-- Where I Stayed
 - The Record
 - Generated statistics
 
@@ -1091,17 +1039,18 @@ Generated statistics may include:
 - Cities
 - Locations
 - Photos
-- Stays
 
 Do not manually store these statistics.
 
 ---
 
-# 24. Stays UX
+# 24. Hotels UX
 
-STAYS presents each Published Hotel once. `/stays/[hotelSlug]` is the primary public property/current-opinion page: identity, City/Country, current rating/recommendations/review, eligible Hotel photography and understated published visit history/Trip links. Nice photographs lead; Record remains a separate documentary section.
+`/hotels` lists Published properties once; `/hotels/[hotelSlug]` is the complete property/current-opinion record: identity, geography, rating/recommendations/review and eligible Nice/Record Hotel photography. No visit history/dates or Trip relationship.
 
-Individual Stay pages are no longer a core public concept. Existing `/stays/[hotelSlug]/[stayId]` URLs verify public visit membership, then redirect to the Hotel. Hidden/missing/wrong-Hotel visits return 404. New public links target Hotel, not individual visits.
+Protected Hotel editing has a visible Photos section, prominent Add Photos action preselecting/locking Hotel context in the shared JPEG importer, eligible cover selection and Photo editing links. No separate uploader.
+
+Legacy `/stays` redirects permanently (308) to `/hotels`. Both old Hotel/individual visit paths redirect only after anonymously resolving a Published Hotel; hidden/missing Hotels return 404. The obsolete visit ID is ignored, never looked up or reconstructed.
 
 ---
 
@@ -1154,7 +1103,7 @@ Proposed structure:
 1. Featured photograph / hero
 2. Selected photography
 3. Recent Trips
-4. Recent Stays
+4. Hotels
 5. Map preview / Where I've Been
 6. About
 
@@ -1187,7 +1136,7 @@ Potential content:
 - Large photograph
 - Short introduction
 - Optional longer explanation
-- Optional travel/photography/stay statistics
+- Optional travel/photography/Hotel statistics
 - Social links
 
 It should not become:
@@ -1432,7 +1381,7 @@ app/
 ├── page
 ├── photos/
 ├── trips/
-├── stays/
+├── hotels/
 ├── map/
 ├── about/
 └── admin/
@@ -1468,7 +1417,6 @@ Next.js retrieves:
 - Cities
 - Locations
 - Photos
-- Stays
 
 and constructs the page.
 
@@ -1527,8 +1475,8 @@ The system should protect the archive from accidental relationship destruction.
 Examples:
 
 - Don't allow deletion of a Location that still has dependent published content without explicit handling.
-- Don't allow deletion of a Hotel that still has Stays without explicit handling.
-- Handle dependent Photos/Stays/Trips safely before destructive operations.
+- Don't allow deletion of a Hotel that still has Photos or pending imports.
+- Handle dependent Photos/Trips safely before destructive operations.
 - Prefer archival/unpublishing over destructive deletion where appropriate.
 
 Deletion should never affect the Lightroom master archive.
@@ -1546,9 +1494,7 @@ Deletion should never affect the Lightroom master archive.
 - Photo detail
 - Trips
 - Trip detail
-- Stays
 - Hotel detail
-- Hotel visit history and safe old-Stay redirects
 - Map V1
 - About
 
@@ -1560,7 +1506,6 @@ Deletion should never affect the Lightroom master archive.
 - City creation/selection
 - Location management
 - Hotel management
-- Stay management
 - Photo management
 - Lightroom importer
 - Import history
@@ -1651,9 +1596,6 @@ Examples:
 Trip date unknown
 → leave dates empty
 
-Stay date unknown
-→ leave dates empty
-
 Camera unknown
 → leave EXIF field empty
 
@@ -1718,7 +1660,7 @@ Recommended sequence:
 - Supabase Auth
 - RLS
 - Basic Admin
-- Basic Trip/Location/Hotel/Stay CRUD
+- Basic Trip/Location/Hotel CRUD
 - Sample data
 
 ### Milestone 2
@@ -1743,7 +1685,6 @@ Recommended sequence:
 
 - Public Trips
 - Locations
-- Stays
 - Hotel pages
 - Relationships
 
@@ -1768,7 +1709,7 @@ Supporting line: **Photography and places by Alex Lim**.
 
 Typography provides the wordmark: restrained editorial serif with clean sans-serif navigation and metadata. FA is utility branding only. Photographs supply visual colour. The existing `lexphotos.com` domain is not an architectural dependency; domain work remains deferred.
 
-The homepage leads with the identity, Featured photography, real context, recent photographs and restrained Trips / Singapore / Stays entry points. `/singapore` is a permanent Home view of ordinary geographic records and eligible Travel photography. Map and Search are not part of Milestone 7.
+The homepage leads with the identity, Featured photography, real context, recent photographs and restrained Trips / Singapore / Hotels entry points. `/singapore` is a permanent Home view of ordinary geographic records and eligible Travel photography. Map and Search are not part of Milestone 7.
 ---
 
 # 48. Final Product Definition
@@ -1779,7 +1720,7 @@ The completed V1 should feel like:
 
 The visitor should primarily experience:
 
-**photographs → places → trips → stays → exploration**
+**photographs → places → trips → hotels → exploration**
 
 rather than:
 
@@ -1809,12 +1750,10 @@ The following decisions are considered locked unless deliberately revisited:
 - Personal photos never imported
 - Record Shots available in Trip archive but not main Photos page
 - Travel photos require Location when published; Trip is required outside Singapore
-- Hotel photos require Hotel, not Stay/Trip/Location
+- Hotel photos require Hotel, not Trip/Location
 - Hotel is distinct from Location
-- Stay requires Trip outside Singapore; Singapore Hotel Stays may omit it
-- Hotel persists independently across multiple Stays
+- Hotel persists independently; no visit entity or Hotel–Trip relationship
 - Trip dates optional
-- Stay dates optional
 - 1–5 whole-star ratings
 - Hotel recommendations: Family / Business / Personal-Leisure
 - No separate Review entity in V1
@@ -1846,3 +1785,7 @@ These rules supersede the earlier Trip-required, 4000px-source and undecided-bra
 ## Milestone 7.1 owner-approved consolidation (2026-10-03)
 
 Hotel owns current opinion and photography; Stay is a lightweight visit. Existing Stay rating/review/room/purpose data is intentionally discarded, without inferring Hotel content. Photo Hotel assignments derive safely from existing Stay relationships; UUID/storage objects remain unchanged. Previously hidden Published Hotel photos are demoted to Draft before removing the old parent, avoiding accidental exposure. Only Hotel now gates Hotel-photo visibility; Travel rules remain unchanged. RLS, private sources/GPS/notes and per-request no-store authorization remain release requirements. Map/Search remain deferred.
+
+## Milestone 7.3 owner-approved Hotel simplification (2026-10-04)
+
+Supersedes all former Stay/visit rules, including the M7/M7.1 historical notes above. Stay was removed after real-world use demonstrated that individual visit records added maintenance friction without sufficient archival value. No replacement visit abstraction or Hotel–Trip relationship. Hotel/Photo identities, current opinions, cover references, sources, derivatives, EXIF/private GPS and safe publication states persist; Stay rows/dates/notes/status/Trip links are intentionally discarded. Canonical /hotels routes replace Stays, with anonymous-visibility-checked legacy redirects. Hotel Photos never enter normal photography collections. Import limits/profiles/privacy/per-request withdrawal are unchanged. Map/Search remain deferred.

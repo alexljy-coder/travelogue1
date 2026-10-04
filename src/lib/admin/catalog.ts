@@ -6,5 +6,3 @@ export type Trip = Database['public']['Tables']['trips']['Row'];
 export type Location = Database['public']['Tables']['locations']['Row'];
 
 export type Hotel = Database['public']['Tables']['hotels']['Row'];
-export type Stay = Database['public']['Tables']['stays']['Row'];
-export type StayOption = Stay & { hotel_name: string; trip_title: string };

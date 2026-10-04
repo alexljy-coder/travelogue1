@@ -16,7 +16,7 @@ const code = (value: string) => (error: unknown) => !!error && typeof error === 
 before(async () => { db = await createTestDatabase(); });
 after(async () => { await db?.close(); });
 beforeEach(async () => {
-  await db.exec('truncate public.countries,public.cities,public.locations,public.trips,public.trip_cities,public.trip_locations,public.hotels,public.stays,public.photos,public.import_items,public.import_batches,private.admin_identity,auth.users');
+  await db.exec('truncate public.countries,public.cities,public.locations,public.trips,public.trip_cities,public.trip_locations,public.hotels,public.photos,public.import_items,public.import_batches,private.admin_identity,auth.users');
   await db.exec(await readFile('supabase/tests/fixtures.sql', 'utf8'));
 });
 async function newTrip(slug = 'new-trip') {
@@ -82,7 +82,7 @@ test('changing a shared Location City maintains every Trip and retains explicit 
   await db.query("select public.admin_save_location($1,$2,'New Castle','new-castle')", [id, newCity]);
   for (const t of [a, b]) assert.equal((await db.query('select city_id from public.trip_cities where trip_id=$1', [t])).rows.length, 2);
 }));
-test('Trip deletion preserves shared archive records; referenced Photos/Stays and joins block destruction', async () => owner(async () => {
+test('Trip deletion preserves shared archive records; referenced Photos and joins block destruction', async () => owner(async () => {
   const id = await newTrip(); const l = await newLocation(id);
   await db.query('select public.admin_delete_trip($1)', [id]);
   assert.equal((await db.query('select id from public.locations where id=$1', [l])).rows.length, 1);
@@ -110,6 +110,6 @@ test('all workflow RPCs reject anonymous and unrelated authenticated users', asy
     }
   });
   const { rows } = await db.query<{ prosecdef: boolean; proconfig: string[] }>("select prosecdef,proconfig from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname like 'admin_%'");
-  assert.equal(rows.length, 20);
+  assert.equal(rows.length, 19);
   assert.ok(rows.every((row) => !row.prosecdef && row.proconfig.includes('search_path=""')));
 });

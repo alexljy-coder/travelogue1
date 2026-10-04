@@ -11,6 +11,6 @@ export default async function HomePage() {
       <figcaption><Link href={`/photos/${opening.id}`} prefetch={false}>{photoLabel(opening)}</Link><span>{[opening.place.city, opening.place.country].filter(Boolean).join(' · ')}</span></figcaption></figure>
       {selection.length > 0 && <section aria-labelledby="selected-heading"><div className="archive-section-heading"><h2 id="selected-heading">Recent photography</h2><Link href="/photos">All photographs</Link></div><PhotoGrid photos={selection} /></section>}
     </> : <div className="archive-empty"><h2>{unavailable ? 'The archive is temporarily unavailable.' : 'The archive is taking shape.'}</h2><p>{unavailable ? 'Please try again later.' : 'Published photographs will appear here.'}</p></div>}
-    <nav className="archive-entry-points" aria-label="Explore the archive"><Link href="/trips">Trips</Link><Link href="/singapore">Singapore <span>Home.</span></Link><Link href="/stays">Stays</Link></nav>
+    <nav className="archive-entry-points" aria-label="Explore the archive"><Link href="/trips">Trips</Link><Link href="/singapore">Singapore <span>Home.</span></Link><Link href="/hotels">Hotels</Link></nav>
   </main>;
 }

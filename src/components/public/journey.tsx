@@ -17,7 +17,7 @@ export function PhotoContextLinks({photo}:{photo:PhotoWithContext}) {
   return <nav className="journey-context-links" aria-label="Photo archive context">
     {photo.context === 'travel' && photo.place.country_code === 'SG' && <Link href="/singapore">Singapore · Home</Link>}
     {photo.place.trip_slug&&<Link href={`/trips/${photo.place.trip_slug}`} prefetch={false}>{photo.place.trip}</Link>}
-    {photo.place.hotel_slug&&<Link href={`/stays/${photo.place.hotel_slug}`} prefetch={false}>{photo.place.hotel}</Link>}
+    {photo.place.hotel_slug&&<Link href={`/hotels/${photo.place.hotel_slug}`} prefetch={false}>{photo.place.hotel}</Link>}
     {photo.place.location_slug&&<Link href={`/locations/${photo.place.location_slug}`} prefetch={false}>{photo.place.location}</Link>}
   </nav>;
 }

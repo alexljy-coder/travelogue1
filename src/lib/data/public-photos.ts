@@ -13,14 +13,16 @@ export function orderedPhotos(client: SupabaseClient<Database>) {
     .order('captured_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false }).order('id', { ascending: true });
 }
+// Normal photographic archive excludes Hotel documentation in both Nice and Record views.
+export function archivePhotos(client: SupabaseClient<Database>) { return orderedPhotos(client).eq('context','travel'); }
 export function selectHomepagePhotos(featured: PublicPhoto[], recent: PublicPhoto[], limit = 9) {
   const seen = new Set<string>();
   return [...featured.filter((p) => p.featured), ...recent].filter((p) => {
-    if (p.classification !== 'nice' || seen.has(p.id)) return false;
+    if (p.context !== 'travel' || p.classification !== 'nice' || seen.has(p.id)) return false;
     seen.add(p.id); return true;
   }).slice(0, limit);
 }
-// Related reads retain anonymous RLS. No Stay/review/private-note projection.
+// Related reads retain anonymous RLS. No review/private-note projection.
 export async function attachContexts(client: SupabaseClient<Database>, photos: PublicPhoto[]): Promise<PhotoWithContext[]> {
   if (!photos.length) return [];
   const locationIds = [...new Set(photos.flatMap((p) => p.location_id ? [p.location_id] : []))];

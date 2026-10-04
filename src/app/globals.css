@@ -48,3 +48,6 @@ th, td { padding: .8rem .5rem; text-align: left; border-bottom: 1px solid #ddd8c
 .photo-metadata dd { margin: 0; overflow-wrap: anywhere; }
 .drop-area { padding: 1.5rem; border: 1px dashed #aaa; margin: 1rem 0; }
 .import-results { padding-left: 1.5rem; overflow-wrap: anywhere; }
+
+/* Hotel-specific import action, following the existing admin button treatment. */
+.button-link { display: inline-block; padding: .65rem 1rem; border: 1px solid #a39b91; border-radius: .2rem; background: #f2eee8; text-decoration: none; font-weight: 600; }

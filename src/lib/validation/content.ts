@@ -55,10 +55,3 @@ export const hotelSchema = z.object({
   recommended_family: flag, recommended_business: flag, recommended_leisure: flag,
   status: z.enum(['draft','published']), editorial_order: optionalPosition,
 }).superRefine(pairedCoordinates);
-export const staySchema = z.object({
-  hotel_id: uuidSchema, trip_id: z.union([uuidSchema,z.literal('')]).transform(value=>value||null), check_in: optionalDate, check_out: optionalDate,
-  internal_notes: optionalText,
-  status: z.enum(['draft','published']), editorial_order: optionalPosition,
-}).superRefine((data,ctx) => {
-  if(data.check_in && data.check_out && data.check_out < data.check_in) ctx.addIssue({code:'custom',path:['check_out'],message:'Check-out cannot precede check-in.'});
-});

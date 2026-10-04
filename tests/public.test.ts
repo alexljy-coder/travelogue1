@@ -17,7 +17,7 @@ const publicClient = () => createAnonymousClient(db, requests);
 before(async () => { db = await createTestDatabase(); });
 after(async () => { await db?.close(); });
 beforeEach(async () => {
-  await db.exec('truncate public.import_items,public.import_batches,public.photos,public.trip_locations,public.trip_cities,public.stays,public.hotels,public.locations,public.trips,public.cities,public.countries,private.admin_identity,auth.users');
+  await db.exec('truncate public.import_items,public.import_batches,public.photos,public.trip_locations,public.trip_cities,public.hotels,public.locations,public.trips,public.cities,public.countries,private.admin_identity,auth.users');
   await db.exec(await readFile('supabase/tests/fixtures.sql', 'utf8'));
   requests.length = 0;
 });
@@ -54,14 +54,14 @@ test('Nice default and explicit Record selections do not mix; empty archive is v
 });
 test('homepage prioritizes Featured Nice, deduplicates, fills from other Nice and supports zero/one', async () => {
   const { data } = await orderedPhotos(publicClient()); assert.ok(data);
-  const featured = { ...data[0], featured: true };
+  const featured = { ...data.find(p=>p.context==='travel' && p.classification==='nice')!, featured: true };
   const record = data.find((p) => p.classification === 'record')!;
   const recent = [featured, ...data];
   const result = selectHomepagePhotos([record, featured], recent);
   assert.equal(result[0].id, featured.id);
   assert.equal(new Set(result.map((p) => p.id)).size, result.length);
   assert.ok(result.every((p) => p.classification === 'nice'));
-  assert.equal(result.length, 2);
+  assert.equal(result.length, 1);
   assert.deepEqual(selectHomepagePhotos([], []), []);
   assert.equal(selectHomepagePhotos([], [featured]).length, 1);
 });

@@ -99,3 +99,8 @@ Test one actual full-resolution Lightroom export under 25 MiB/80MP before a ten-
 ## Milestone 7.1 Hotel ownership
 
 After applying `20261003000100_hotel_archive_refinement.sql`, choose Hotel context and a **Hotel**, not a Stay, in importer/editor. Published Hotel photography requires a Published Hotel only. Existing assignments derive through former Stay and retain the same five UUID keys/bytes; no object move/duplication/re-export. Hotel covers must be Published Nice photographs from that property; clear cover before deleting a Photo. Stay deletion leaves property photos intact. Hotel deletion is blocked by photos/active imports/visits. Previously parent-hidden Published Hotel photos become Draft in the migration and need explicit review/publication. No R2/CORS/credential change; 25 MiB/80MP/ten sequential JPEGs, derivative profiles and exact-byte duplicate/cleanup behavior stay unchanged.
+
+
+## M7.3 Hotel-only workflow
+
+Open Admin → Hotels → Hotel → Photos → Add Photos. The shared importer already has Hotel context/property locked. No Stay/visit or Trip/Location assignment for Hotel photography. Existing R2 variables/CORS/private bucket/five objects/import limits/profiles are unchanged; this schema removal does not move/delete/regenerate images. Hotel publication remains the required public parent; Hotel documentation does not enter normal /photos or /singapore collections.

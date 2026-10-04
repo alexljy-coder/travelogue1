@@ -46,8 +46,3 @@ export function coverEligible(photo: PhotoForPublishing, parents: PhotoParents, 
   if (target.type === 'location') return photo.context === 'travel' && photo.location_id === target.id;
   return photo.context === 'hotel' && photo.hotel_id === target.id;
 }
-
-export function stayPublicationErrors(status: PublicationStatus, tripStatus: PublicationStatus | null, hotelStatus: PublicationStatus, countryCode?: string): string[] {
-  if (status !== 'published') return [];
-  return (tripStatus === 'published' || tripStatus === null && countryCode === 'SG') && hotelStatus === 'published' ? [] : ['A published Trip and Hotel are required.'];
-}

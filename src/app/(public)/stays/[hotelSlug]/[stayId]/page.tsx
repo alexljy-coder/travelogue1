@@ -1,9 +1,10 @@
-import { notFound, redirect } from 'next/navigation';
-import { getHotel, getStay } from '@/lib/data/public-lodging';
-// Resolve under anonymous RLS before redirecting; Draft/wrong-property visits stay 404.
-export default async function Page({params}:{params:Promise<{hotelSlug:string;stayId:string}>}) {
-  const {hotelSlug,stayId}=await params;
-  const hotel=await getHotel(hotelSlug);
-  if(!hotel || !await getStay(hotel.id,stayId)) notFound();
-  redirect(`/stays/${hotel.slug}`);
+import { notFound, permanentRedirect } from 'next/navigation';
+import { validSlug } from '@/lib/data/public-places';
+import { getHotel } from '@/lib/data/public-lodging';
+export default async function LegacyHotel({ params }: { params: Promise<{ hotelSlug: string }> }) {
+  const {hotelSlug}=await params;
+  if(!validSlug(hotelSlug)) notFound();
+  const hotel = await getHotel(hotelSlug);
+  if (!hotel) notFound();
+  permanentRedirect(`/hotels/${hotel.slug}`);
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { coverEligible, photoPublicationErrors, stayPublicationErrors, type PhotoForPublishing, type PhotoParents } from '../src/lib/validation/publishing';
+import { coverEligible, photoPublicationErrors, type PhotoForPublishing, type PhotoParents } from '../src/lib/validation/publishing';
 
 const travel: PhotoForPublishing = { status: 'published', classification: 'nice', context: 'travel', processing_status: 'ready', featured: false, trip_id: 'trip', location_id: 'location', hotel_id: null };
 const parents: PhotoParents = { trip: { id: 'trip', status: 'published' }, location: { id: 'location', status: 'published' }, tripLocationAssociated: true };
@@ -34,10 +34,4 @@ test('covers require visible Nice photos associated with their exact target', ()
   assert.equal(coverEligible(hotel, hotelParents, { type: 'hotel', id: 'hotel' }), true);
   assert.equal(coverEligible(hotel, hotelParents, { type: 'hotel', id: 'other' }), false);
   assert.equal(coverEligible(hotel, hotelParents, { type: 'trip', id: 'trip' }), false);
-});
-
-test('Stay publication requires both Trip and Hotel but Draft does not', () => {
-  assert.deepEqual(stayPublicationErrors('published', 'published', 'published'), []);
-  assert.ok(stayPublicationErrors('published', 'published', 'draft').length);
-  assert.deepEqual(stayPublicationErrors('draft', 'draft', 'draft'), []);
 });

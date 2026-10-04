@@ -22,17 +22,18 @@ export function validationState(values: FormValues, issues: readonly { path: Pro
 }
 
 const workflowMessages = new Set([
-  'A Trip is required for a Stay outside Singapore.', 'A Trip is required for photography outside Singapore.', 'Assign a Trip to dependent home records before moving their geography outside Singapore.',
-  'Select an existing City.', 'Select an existing Hotel.', 'Select an existing Trip.', 'Select an existing Stay.',
-  'This Hotel no longer exists.', 'This Stay no longer exists.', 'A published Trip and Hotel are required.',
+  'A Trip is required for photography outside Singapore.', 'Assign a Trip to dependent home records before moving their geography outside Singapore.',
+  'This City is used by a Location in the Trip. Remove those associations first.', 'This Trip has Photos. Keep it, or unpublish it instead.',
+  'Select an existing City.', 'Select an existing Hotel.', 'Select an existing Trip.',
+  'This Hotel no longer exists.', 'A published Trip and Hotel are required.',
   'This Hotel already exists in this City. Select the existing Hotel.',
   'Select an existing Country.',
   'This Country code already exists. Select the existing Country.',
   'This Country name already exists. Select the existing Country.',
   'This City URL name already exists. Select the existing City or use another URL name.',
   'This Trip no longer exists.', 'This Location no longer exists.', 'Select an existing Location.',
-  'This City is used by a Location or Stay in the Trip. Remove those associations first.',
-  'This Trip has Photos or Stays. Keep it, or unpublish it instead.',
+
+
 ]);
 export function databaseError(error: { code?: string; message?: string }): string {
   if (error.message && workflowMessages.has(error.message)) return error.message;

@@ -6,7 +6,6 @@ import sharp from 'sharp';
 import { createTestDatabase, asRole } from './database';
 import { createAnonymousClient } from './public-client';
 import { singaporePhotos, singaporeOpening, singaporePlaces } from '../src/lib/data/public-singapore';
-import { relatedStays } from '../src/lib/data/public-stays';
 import { orderedPhotos, queryPhoto } from '../src/lib/data/public-photos';
 import { photoPublicationErrors } from '../src/lib/validation/publishing';
 import { processJpeg } from '../src/lib/photos/image';
@@ -17,7 +16,6 @@ const admin='00000000-0000-4000-8000-000000000001';
 const trip='30000000-0000-4000-8000-000000000001';
 const location='40000000-0000-4000-8000-000000000001';
 const hotel='50000000-0000-4000-8000-000000000001';
-const stay='60000000-0000-4000-8000-000000000001';
 const photo='70000000-0000-4000-8000-000000000001';
 async function fixture(home=true) {
   const db=await createTestDatabase();
@@ -42,7 +40,6 @@ test('Singapore published photography can omit Trip, stays global and respects L
 test('overseas trip-less publication is rejected by actual database and preflight',async()=>{
  const db=await fixture(false);try{
  await assert.rejects(asRole(db,'authenticated',admin,()=>db.query('update public.photos set trip_id=null where id=$1',[photo])),/Trip is required/);
- await assert.rejects(asRole(db,'authenticated',admin,()=>db.query('update public.stays set trip_id=null where id=$1',[stay])),/Trip is required/);
  const p={status:'published',classification:'nice',context:'travel',processing_status:'ready',featured:false,trip_id:null,location_id:location,hotel_id:null} as const;
  assert.deepEqual(photoPublicationErrors(p,{location:{id:location,status:'published',country_code:'SG'}}),[]);
  assert.ok(photoPublicationErrors(p,{location:{id:location,status:'published',country_code:'JP'}}).length);
@@ -55,14 +52,11 @@ test('Singapore photography may belong to a real Trip, whose withdrawal still hi
  assert.equal(await queryPhoto(client,photo),null);assert.deepEqual((await singaporePhotos(client,'nice')).photos,[]);
  }finally{await db.close();}
 });
-test('Singapore Hotel stays can omit Trip; Hotel photography stays separate and private fields remain denied',async()=>{
+test('Singapore Hotel photography remains separate and independent of Trips',async()=>{
  const db=await fixture();try{
- await asRole(db,'authenticated',admin,()=>db.query('select public.admin_save_stay($1,$2)',[stay,{hotel_id:hotel,trip_id:null,status:'published',review_text:'A real optional review',internal_notes:'PRIVATE NOTE'}]));
  const client=createAnonymousClient(db);const photos=(await singaporePhotos(client,'nice')).photos;
  assert.ok(photos.every(p=>p.context==='travel'));
  const hotelPhoto=await queryPhoto(client,'70000000-0000-4000-8000-000000000003');assert.ok(hotelPhoto);assert.equal(hotelPhoto.place.trip_slug,null);
- const visits=await relatedStays(client,'hotel_id',hotel);assert.equal(visits.stays[0].trip,null);
- await asRole(db,'anon',null,async()=>{await assert.rejects(db.query('select internal_notes from public.stays'));await assert.rejects(db.query('select latitude,longitude from public.photos'));});
  await db.query("update public.hotels set status='draft' where id=$1",[hotel]);
  assert.equal(await queryPhoto(client,'70000000-0000-4000-8000-000000000003'),null);
  }finally{await db.close();}
